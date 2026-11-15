@@ -39,7 +39,8 @@ export default function App() {
     <div className="app">
       <header className="topbar">
         <a className="brand" href="#/today" onClick={() => setState(loadState())}>
-          <span className="brand-mark">♞</span> Notation Coach
+          <img src="./logo.png" alt="" width="26" height="26" />
+          <span className="brand-label">Notation Coach</span>
         </a>
         <nav>
           <a className={route.view === 'today' ? 'active' : ''} href="#/today">Today</a>

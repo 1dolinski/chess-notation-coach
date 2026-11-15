@@ -20,6 +20,22 @@ Live: https://chess-notation-coach.vercel.app/
 - **`/llms.txt`** — a complete reminder contract: drop it into Muse, Grok or any assistant with a scheduler and it
   sends the daily nudge with the right deep link, and reads a real streak from your export code.
 
+## Look
+
+Visual system: Refero Styles' **Linear — "midnight precision instrument"**
+(https://styles.refero.design/style/90ce5883-bb24-4466-93f7-801cd617b0d1). Near-black substrate
+(`#08090a`), paper-white type at tight tracking, hairline borders instead of shadows, and a single
+acid-lime accent (`#e4f222`) reserved for one primary action per view. The board is monochrome
+(mist / smoke) with lime highlight rings so it never competes with the buttons.
+
+Logo and hero art were generated with `google/gemini-nano-banana-2.1` via OpenRouter and live in
+`public/logo.png` (512px), `public/favicon.png`, `public/logo.jpg` and `public/hero.jpg`.
+
+## Give this to your AI
+
+The homepage carries a big editable prompt block — the daily-reminder contract in one paste — with
+copy buttons for the prompt, `llms.txt` and the practice link. Editing it saves to localStorage.
+
 ## Run it
 
 ```

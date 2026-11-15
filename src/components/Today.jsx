@@ -1,5 +1,7 @@
 import React, { useMemo, useState } from 'react'
 import Session from './Session'
+import Hero from './Hero'
+import SharePrompt from './SharePrompt'
 import { planForDate, extraSet, meta, diagnosis } from '../lib/daily'
 import { loadState, streakInfo, todayKey, dayOf } from '../lib/store'
 
@@ -8,12 +10,6 @@ const KIND_LABEL = {
   knight: 'knight jumps',
   read: 'read the move',
   play: 'make the move'
-}
-
-function prettyDate(key) {
-  const [y, m, d] = key.split('-').map(Number)
-  const dt = new Date(y, m - 1, d)
-  return dt.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })
 }
 
 export default function Today({ dateKey = todayKey(), themeOverride = null, onNavigate }) {
@@ -25,11 +21,6 @@ export default function Today({ dateKey = todayKey(), themeOverride = null, onNa
   const info = useMemo(() => streakInfo(state), [state])
   const diag = useMemo(() => diagnosis(state), [state])
   const day = dayOf(state, todayKey())
-
-  const breakdown = plan.items.reduce((acc, it) => {
-    acc[it.kind] = (acc[it.kind] || 0) + 1
-    return acc
-  }, {})
 
   if (session) {
     return (
@@ -50,32 +41,16 @@ export default function Today({ dateKey = todayKey(), themeOverride = null, onNa
 
   return (
     <div className="page">
-      <div className="coach-card">
-        <div className="coach-top">
-          <div>
-            <div className="kicker">{isToday ? 'Today' : prettyDate(dateKey)} · {plan.label}</div>
-            <h2>{plan.headline}</h2>
-          </div>
-          <div className={`badge ${plan.source === 'bot' ? 'bot' : ''}`}>{plan.source === 'bot' ? 'bot feed' : 'coach'}</div>
-        </div>
-        <p className="why">{plan.why}</p>
-        <p className="tip">{plan.tip}</p>
-        <div className="chips">
-          {Object.entries(breakdown).map(([k, v]) => (
-            <span className="chip" key={k}>{v} × {KIND_LABEL[k]}</span>
-          ))}
-          <span className="chip ghost">{plan.items.length} reps · ≈ {Math.max(3, Math.round(plan.items.length * 0.35))} min</span>
-        </div>
-        <div className="row">
-          <button className="btn primary big" onClick={() => setSession('set')}>Start {plan.items.length}-rep set</button>
-          <button className="btn" onClick={() => setSession('extra')}>Extra reps</button>
-          <label className="toggle">
-            <input type="checkbox" checked={coords} onChange={(e) => setCoords(e.target.checked)} />
-            show coordinates
-          </label>
-        </div>
-        {!isToday && <p className="small">This is the set for {dateKey}. Reps still count toward your streak today.</p>}
-      </div>
+      <Hero
+        plan={plan}
+        info={info}
+        dateKey={dateKey}
+        isToday={isToday}
+        coords={coords}
+        setCoords={setCoords}
+        onStart={() => setSession('set')}
+        onExtra={() => setSession('extra')}
+      />
 
       <div className="panel streak-strip">
         <div className="streak-big">
@@ -98,6 +73,8 @@ export default function Today({ dateKey = todayKey(), themeOverride = null, onNa
         </div>
       </div>
 
+      <SharePrompt />
+
       {diag.weak && (
         <div className="panel note">
           <b>Coach read:</b> weakest area is <b>{KIND_LABEL[diag.weak.type] || diag.weak.type}</b> at{' '}
@@ -110,7 +87,7 @@ export default function Today({ dateKey = todayKey(), themeOverride = null, onNa
         <ol className="tricks">
           <li><b>Grid, not letters.</b> Four corners + centre first: a1, h1, a8, h8, then d4 e4 d5 e5. Say the square name out loud as you click it in grid drills.</li>
           <li><b>Knight jumps.</b> Every knight move is 2 files + 1 rank or 1 file + 2 ranks. Learn the eight-square fan once and knight notation stops needing thought.</li>
-          <li><b>Chunk, don't spell.</b> "N - f - 3" is slow; "knight to f3" is one chunk. Read the piece letter, then the destination square, then the tail symbol (+ # x).</li>
+          <li><b>Chunk, don’t spell.</b> “N - f - 3” is slow; “knight to f3” is one chunk. Read the piece letter, then the destination square, then the tail symbol (x + #).</li>
         </ol>
         <button className="link" onClick={() => onNavigate('#/tricks')}>full cheat sheet →</button>
       </div>
