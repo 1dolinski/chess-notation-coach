@@ -7,8 +7,9 @@
   "scripts": {
     "drills": "node scripts/build-drills.mjs",
     "log": "node scripts/sync-log.mjs",
-    "dev": "npm run log && vite",
-    "build": "node scripts/build-drills.mjs && node scripts/sync-log.mjs && vite build",
+    "skill": "node scripts/sync-skill.mjs",
+    "dev": "npm run log && npm run skill && vite",
+    "build": "node scripts/build-drills.mjs && node scripts/sync-log.mjs && node scripts/sync-skill.mjs && vite build",
     "preview": "vite preview --port 4173"
   },
   "dependencies": {

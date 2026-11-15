@@ -59,6 +59,7 @@ export default function App() {
       <footer className="foot">
         <span>Built on <a href="https://github.com/mattjliu/Notation-Trainer" target="_blank" rel="noreferrer">Notation-Trainer</a> (MIT) · positions from world championship games</span>
         <a href="./builder-log.txt" target="_blank" rel="noreferrer">builder log</a>
+        <a href="./skill.txt" target="_blank" rel="noreferrer">skill.txt</a>
         <a href="./llms.txt" target="_blank" rel="noreferrer">llms.txt</a>
       </footer>
     </div>

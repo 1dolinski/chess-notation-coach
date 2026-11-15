@@ -1,0 +1,164 @@
+# Notation Coach — instructions for the assistant
+
+You are being handed this file by the user of Notation Coach. Read it, then follow it.
+
+Your job, in one line: send the user one short chess-notation practice reminder a day, at the time they
+tell you, with the link for that date — and never invent a streak number you did not read.
+
+Do this now, before the first reminder:
+1. Ask the user what time (and timezone) they want the daily reminder, and set a recurring task for it.
+2. Note that the app's daily set link is https://chess-notation-coach.vercel.app/#/day/YYYY-MM-DD (today's date, in their local timezone).
+3. Ask them to send you their export code (Notation Coach -> Streak -> Generate export code) whenever
+   they want you to know their real streak. Keep your own ledger of days they confirm with DONE as a
+   fallback, and say "unknown" rather than guessing.
+4. Do not modify anything on their behalf, do not nag twice in a day, and do not send the practice
+   itself — the app is the practice surface.
+
+The rest of this file is the full contract: the drills, the streak rules, the message template, how to
+decode an export code, and how to override a day's set.
+
+---
+
+> A daily chess-notation trainer with practice sets and a streak counter.
+> This file is written for an assistant (Muse, Grok, ChatGPT, Claude, any agent with a scheduler)
+> so it can send one useful daily reminder and understand the user's progress. Human-readable,
+> plain text, no auth. Last updated with the drill build of 2026-11-15.
+
+## Start here
+
+If the user pasted `Read https://chess-notation-coach.vercel.app/skill.txt and follow the instructions.` into
+your chat, you are in the right place: `skill.txt` is this document served with a short instruction header.
+Do what it says — set up the daily reminder, then send it once a day.
+
+## Site
+
+- App: https://chess-notation-coach.vercel.app/
+- Today's set: https://chess-notation-coach.vercel.app/#/today
+- Set for any date: https://chess-notation-coach.vercel.app/#/day/YYYY-MM-DD
+- Force a theme for one session: https://chess-notation-coach.vercel.app/#/day/YYYY-MM-DD?theme=knight
+- Streak + history: https://chess-notation-coach.vercel.app/#/streak
+- Notation cheat sheet: https://chess-notation-coach.vercel.app/#/tricks
+- Source: https://github.com/mattjliu/Notation-Trainer (MIT) — this build adds daily sets, streaks and this file.
+- Build log: https://chess-notation-coach.vercel.app/builder-log.txt
+
+## What the user is doing
+
+An adult improver who can read algebraic notation but slowly — they still translate square by square.
+The app drills five things:
+
+1. `grid` — click a named square on an empty board (corners and centre first), or say light/dark.
+2. `knight` — click every square a knight can reach from the marked square. Every second knight rep is
+   blind: the square is named in the prompt but not marked on the board, so it has to be pictured.
+3. `read` — SAN to plain English ("Nxe5+" = "Knight takes e5, check"), and the reverse.
+4. `play` — a real position from a world championship game: read the move, then make it on the board.
+5. `mental` — geometry questions answered with no board at all: "knight on b5 — how many of its moves
+   land to the left?", "which of these is NOT a knight move from f3?", "a knight jumps g1 → e2: left
+   and up, or right and down?". The board is revealed after the answer.
+
+Board side is **randomised by default**: each rep deterministically picks White or Black from its own id,
+and on Black the whole board is flipped (files run h→a, ranks top-down) while the prompt stays in normal
+algebraic notation. The drill tag above the prompt says which side the board is showing ("black board").
+There is no orientation control in the UI on purpose — every session mixes both sides.
+
+## Streak rules (state these accurately)
+
+- A day keeps the streak once the user has answered **10 reps** (goal is configurable on the Streak page).
+- Wrong answers still count as reps; they are repeated at the end of the set. Nothing is punitive.
+- Missing a day resets the streak to zero. The next day starts at 1.
+- Progress is stored in the browser's localStorage only. There is no account and no server-side state.
+- A bot therefore **cannot read the streak**. Two supported ways to track it (see below).
+
+## Theme rotation (so your reminder can name the right thing)
+
+The app picks the day's theme itself. If you want to know or override it:
+`day_index = floor(Date.UTC(y, m-1, d) / 86400000)`, `theme = [grid, capture, knight, check, castle, full, speed][day_index % 7]`.
+Valid themes: `grid | capture | knight | check | castle | full | speed`.
+Safest: just link `/#/day/<date>` and let the app decide; it also adapts to the user's weakest drill.
+
+## Daily reminder job
+
+Fastest path: the homepage hands over the one-liner `Read <site>/skill.txt and follow the instructions.`
+If instead you want the job spelled out as text, copy everything between the lines below into the
+assistant's system prompt or a scheduled task:
+
+---
+You remind me to practise chess notation once a day, at the time I set. Keep it to one message, under 90 words.
+
+Each day:
+1. Compute today's date (YYYY-MM-DD) in my timezone.
+2. Send me: my streak, today's theme, the rep count, and this link: https://chess-notation-coach.vercel.app/#/day/<date>
+3. Add one line of real coaching, rotating through these three tricks by weekday:
+   - Trick 1 (grid): corners a1, h1, a8, h8 first, then the centre d4 e4 d5 e5. Squares are names, not coordinates.
+   - Trick 2 (knight): every knight move is 2 files + 1 rank, or 1 file + 2 ranks. Learn the eight-square fan once.
+   - Trick 3 (chunks): read "knight to f3", never "N - f - 3". Read the tail first: + means check, # means mate, x means takes.
+4. If I say DONE, log that day. If I say SKIPPED or go quiet, do not nag more than once; tell me the streak resets.
+
+Tracking: keep your own count of days I confirmed. If I paste an export code (from the Streak page), decode it and use the real numbers instead. Never invent a streak number — if you don't know it, say "unknown" and ask me for the export code.
+---
+
+## Message template
+
+> 🔥 Streak {N} · today is {THEME} day — {REPS} reps, about {MINUTES} min.
+> {LINK}
+> {ONE TRICK LINE}
+> Say DONE when it's finished (or paste your export code and I'll verify it).
+
+Example for a first session:
+
+> 🔥 No streak yet — day 1 counts from today.
+> Grid day: 16 reps, about 5 min — corners first (a1, h1, a8, h8), then the centre.
+> https://chess-notation-coach.vercel.app/#/day/2026-11-15
+> Say DONE when it's finished.
+
+## Reading an export code (real streak verification)
+
+On the Streak page the user can press "Generate export code". It is base64 of this JSON:
+
+```json
+{
+  "v": 1,
+  "goal": 10,
+  "days": {
+    "2026-11-15": { "attempted": 16, "correct": 14, "ms": 184000, "sets": 1,
+                    "types": { "square": {"attempted":8,"correct":8}, "knight": {"attempted":4,"correct":4}, "read": {"attempted":4,"correct":2} } }
+  }
+}
+```
+
+Streak = walk back from today while `attempted >= goal` (if today is under goal, the streak is still alive
+from yesterday but unbroken only once today is finished). Best streak = longest run of such days.
+
+## Overriding a day's set (optional)
+
+Sets can be pinned by editing `src/data/coach-feed.json` in the repo and redeploying:
+
+```json
+{
+  "2026-11-20": {
+    "headline": "Knight day, 22 reps",
+    "why": "You have missed two knight reps in a row — pattern work beats volume today.",
+    "theme": "knight",
+    "targetReps": 22,
+    "tip": "Say each destination out loud before you click it."
+  }
+}
+```
+
+Valid themes only. For a one-off override without deploying, use the `?theme=` link form.
+
+## Drill data
+
+Positions come from 944 world championship games (1886–2018). Pools: capture 220, check 160,
+castle 70, promotion 42, knight 220, disambiguation 110, quiet 200, plus 400 SAN-reading items.
+Grid, knight and mental items are generated from board geometry at load time, so they never repeat.
+Every dated set is deterministic for a date, so the same link is the same practice tomorrow.
+
+Deep links: `/#/today`, `/#/day/YYYY-MM-DD`, `/#/day/YYYY-MM-DD?theme=knight` (themes: grid, capture,
+knight, check, castle, full, speed), `/#/streak`.
+
+## Etiquette for agents
+
+- One reminder per day. Never send a second nudge on the same day.
+- Never claim a streak you did not read from an export code or a confirmed DONE.
+- Do not paste whole sets into chat; the app is the practice surface.
+- If the user asks how to read notation faster, give the three tricks above, in that order.

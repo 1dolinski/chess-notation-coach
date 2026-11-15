@@ -5,6 +5,12 @@
 > so it can send one useful daily reminder and understand the user's progress. Human-readable,
 > plain text, no auth. Last updated with the drill build of 2026-11-15.
 
+## Start here
+
+If the user pasted `Read https://chess-notation-coach.vercel.app/skill.txt and follow the instructions.` into
+your chat, you are in the right place: `skill.txt` is this document served with a short instruction header.
+Do what it says — set up the daily reminder, then send it once a day.
+
 ## Site
 
 - App: https://chess-notation-coach.vercel.app/
@@ -50,9 +56,11 @@ The app picks the day's theme itself. If you want to know or override it:
 Valid themes: `grid | capture | knight | check | castle | full | speed`.
 Safest: just link `/#/day/<date>` and let the app decide; it also adapts to the user's weakest drill.
 
-## Daily reminder job — prompt to give the bot
+## Daily reminder job
 
-Copy everything between the lines into the assistant's system prompt or a scheduled task:
+Fastest path: the homepage hands over the one-liner `Read <site>/skill.txt and follow the instructions.`
+If instead you want the job spelled out as text, copy everything between the lines below into the
+assistant's system prompt or a scheduled task:
 
 ---
 You remind me to practise chess notation once a day, at the time I set. Keep it to one message, under 90 words.

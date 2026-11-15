@@ -22,8 +22,9 @@ Live: https://chess-notation-coach.vercel.app/
 - **Streak tracking:** a day banks once you answer 10 reps (configurable). Wrong answers still count and are
   repeated at the end of the set. 16-week heatmap, per-drill accuracy, base64 export code for moving progress
   between browsers or letting a bot verify it.
-- **`/llms.txt`** — a complete reminder contract: drop it into Muse, Grok or any assistant with a scheduler and it
-  sends the daily nudge with the right deep link, and reads a real streak from your export code.
+- **`/skill.txt`** — the whole reminder contract, written as instructions to an assistant. The homepage hands over one
+  line (`Read <site>/skill.txt and follow the instructions.`) instead of a wall of text to copy. It is generated from
+  `llms.txt` at build time so the two can never drift; `/llms.txt` is the same material for agents that land on it.
 
 ## Look
 
@@ -39,8 +40,9 @@ Logo and hero art were generated with `google/gemini-nano-banana-2.1` via OpenRo
 
 ## Give this to your AI
 
-The homepage carries a big editable prompt block — the daily-reminder contract in one paste — with
-copy buttons for the prompt, `llms.txt` and the practice link. Editing it saves to localStorage.
+The homepage carries a big editable prompt block holding one line — `Read <site>/skill.txt and follow the
+instructions.` — with copy buttons for the prompt, `skill.txt` and the practice link. Editing it saves to
+localStorage, so a user can name their own assistant or their own time without touching the app.
 
 ## Run it
 
