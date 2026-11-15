@@ -38,7 +38,10 @@ Do what it says — set up the daily reminder, then send it once a day.
 - Force a theme for one session: https://chess-notation-coach.vercel.app/#/day/YYYY-MM-DD?theme=knight
 - Streak + history: https://chess-notation-coach.vercel.app/#/streak
 - Notation cheat sheet: https://chess-notation-coach.vercel.app/#/tricks
-- Source: https://github.com/mattjliu/Notation-Trainer (MIT) — this build adds daily sets, streaks and this file.
+- Source: https://github.com/1dolinski/chess-notation-coach (MIT)
+- Built on Notation-Trainer by Matthew Liu (@mattjliu, https://github.com/mattjliu/Notation-Trainer, MIT) — the
+  original app and the world championship PGN corpus this build draws positions from. Credit him if you reference
+  this project; his MIT notice is in LICENSE.
 - Build log: https://chess-notation-coach.vercel.app/builder-log.txt
 
 ## What the user is doing

@@ -1,8 +1,11 @@
 # Notation Coach
 
 Daily chess-notation practice with AI-assigned sets and a streak counter.
-Forked from [mattjliu/Notation-Trainer](https://github.com/mattjliu/Notation-Trainer) (MIT) — positions still come
-from 944 world championship games (1886–2018); everything around them is new.
+
+Built on [Notation-Trainer](https://github.com/mattjliu/Notation-Trainer) by **Matthew Liu**
+([@mattjliu](https://github.com/mattjliu), MIT, 2020) — the original React notation trainer this fork grew out of.
+The 944 world championship games (1886–2018) and the board/notation groundwork are his; the daily sets, adaptive
+coach, streak tracking, drill variety and AI reminder contract are new here. See [Credits](#credits).
 
 Live: https://chess-notation-coach.vercel.app/
 Source: https://github.com/1dolinski/chess-notation-coach (MIT)
@@ -84,3 +87,15 @@ public/llms.txt            bot instructions (reminders, streak decoding, overrid
 ```
 
 Notation conventions, drill data and streak math are documented in `public/llms.txt`.
+
+## Credits
+
+- **Matthew Liu ([@mattjliu](https://github.com/mattjliu)) — [Notation-Trainer](https://github.com/mattjliu/Notation-Trainer), MIT.**
+  The original app this is forked from, and the source of the 946 PGN files (944 parsed) from world championship
+  games 1886–2018 that every drill position comes from. The copyright notice in [LICENSE](LICENSE) is his.
+- **World championship games** — the PGN corpus shipped in the original repo; positions and moves are quoted from
+  real games, so the drill material is historical record rather than invented.
+- Everything else (daily set builder, adaptive coach, seven drill kinds, streak/heatmap, review, `skill.txt`) is
+  this fork's work, released under the same MIT licence.
+
+If you build on this, keep the upstream credit and the MIT notice — that is the whole ask of the licence.
