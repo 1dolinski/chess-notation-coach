@@ -86,14 +86,22 @@ function DrillBoard({ item, marked, onSquare, interactive = true, coords = false
   if (item.kind === 'square' && item.mode === 'click') {
     return <Board marked={marked} coords={coords} orientation={side} onSquare={interactive ? onSquare : null} selectable={interactive} />
   }
+  // generated boards have no position of their own: draw the training knight in the colour of the
+  // side being viewed, so a Black-side board shows a Black knight instead of a White one
+  const knight = { [item.from]: { type: 'n', color: side === 'black' ? 'b' : 'w' } }
   if (item.kind === 'knight') {
-    return <Board marked={marked} coords={true} orientation={side} onSquare={interactive ? onSquare : null} selectable={interactive} />
+    return (
+      <Board
+        marked={marked} coords={true} orientation={side} pieces={knight}
+        onSquare={interactive ? onSquare : null} selectable={interactive}
+      />
+    )
   }
   if (item.kind === 'mental') {
     return (
       <Board
         marked={marked} coords={true} selectable={false} size={size}
-        pieces={{ [item.from]: { type: 'n', color: 'w' } }} orientation={side}
+        pieces={knight} orientation={side}
       />
     )
   }

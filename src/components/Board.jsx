@@ -20,7 +20,8 @@ export function parseFen(fen) {
 
 export default function Board({
   fen = null, orientation = 'white', onSquare = null, marked = {}, selectable = true, size = 480, coords = false,
-  pieces = {} // extra piece overlays for empty boards, e.g. { b5: { type: 'n', color: 'w' } }
+  pieces = {}, // extra piece overlays for empty boards, e.g. { b5: { type: 'n', color: 'w' } }
+  sideTag = true // on a flipped board, say whose side you are looking from
 }) {
   const [vp, setVp] = useState(() => (typeof window === 'undefined' ? { w: 900, h: 900 } : { w: window.innerWidth, h: window.innerHeight }))
   useEffect(() => {
@@ -36,17 +37,23 @@ export default function Board({
   const fitted = Math.min(size, vp.w - 44, Math.max(240, vp.h - 300))
   const cell = Math.floor(fitted / 8)
 
+  const flipped = orientation === 'black'
+
   return (
-    <div className="board" style={{ width: cell * 8, height: cell * 8 }}>
+    <div className="board-wrap">
+    <div className={`board ${flipped ? 'flipped' : ''}`} style={{ width: cell * 8, height: cell * 8 }}>
       {ranks.map((rank) => files.map((file) => {
         const square = file + rank
         const dark = (FILES.indexOf(file) + rank - 1) % 2 === 0
         const piece = board[square] || pieces[square]
         const mark = marked[square] || ''
+        // The two ranks nearest the viewer are tinted on a flipped board. A Black view puts rank 1
+        // at the top and rank 8 at the bottom (Black sits on rank 8), so "your side" is ranks 7–8.
+        const home = flipped && (rank === 8 || rank === 7)
         return (
           <div
             key={square}
-            className={`sq ${dark ? 'dark' : 'light'} ${mark} ${selectable && onSquare ? 'clickable' : ''}`}
+            className={`sq ${dark ? 'dark' : 'light'} ${mark} ${home ? 'home' : ''} ${selectable && onSquare ? 'clickable' : ''}`}
             style={{ width: cell, height: cell, fontSize: cell * 0.78 }}
             onClick={selectable && onSquare ? () => onSquare(square) : undefined}
             data-square={square}
@@ -60,6 +67,11 @@ export default function Board({
           </div>
         )
       }))}
+    </div>
+    {/* caption, not an overlay: a pill on the board would sit on top of h1 and eat a click */}
+    {sideTag && flipped && (
+      <span className="side-tag"><i className="side-dot" />Black’s view · your side is the tinted half at the bottom</span>
+    )}
     </div>
   )
 }
