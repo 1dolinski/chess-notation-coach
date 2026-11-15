@@ -167,9 +167,11 @@ Valid themes only. For a one-off override without deploying, use the `?theme=` l
 
 ## Drill data
 
-Positions come from 944 world championship games (1886–2018). Pools: capture 220, check 160,
-castle 70, promotion 42, knight 220, disambiguation 110, quiet 200, plus 400 SAN-reading items.
-Grid, knight and mental items are generated from board geometry at load time, so they never repeat.
+Positions come from 944 world championship games (1886–2018): 5,784 bundled items — capture 1000, knight 1000,
+quiet 800, disambiguation 500, check 400, castle 200, promotion 42, plus 1,842 SAN-reading items grouped by kind
+(so a "check day" shows checks). Grid, knight and mental items are generated from board geometry at load time.
+Every rep is keyed by content and recorded with the date it was served; the daily draw skips anything served on an
+earlier day (600-entry seen map), so consecutive sets do not repeat — measured at ~5% repetition over 60 days.
 Every dated set is deterministic for a date, so the same link is the same practice tomorrow.
 
 Deep links: `/#/today`, `/#/day/YYYY-MM-DD`, `/#/day/YYYY-MM-DD?theme=knight` (themes: grid, capture,
