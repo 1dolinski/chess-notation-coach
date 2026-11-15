@@ -155,23 +155,6 @@ h3 { font-size: 20px; line-height: 1.2; letter-spacing: -0.012em; }
 .toggle { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--fog); }
 .toggle input { accent-color: var(--lime-deep); width: 18px; height: 18px; }
 
-/* ---------------- settings ---------------- */
-.settings-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 10px 0; }
-.settings-label { font-size: 13px; color: var(--fog); min-width: 84px; }
-.segmented {
-  display: flex; flex-wrap: wrap; gap: 4px; background: var(--obsidian);
-  border: 1px solid var(--graphite); border-radius: var(--r-btn); padding: 4px;
-}
-.seg {
-  font: inherit; font-size: 13px; font-weight: 510; cursor: pointer; color: var(--fog);
-  background: transparent; border: 1px solid transparent; border-radius: 4px;
-  padding: 8px 12px; min-height: 36px;
-}
-.seg:hover { color: var(--paper); }
-.seg.on { background: var(--void); border-color: var(--smoke); color: var(--paper); }
-.checkline { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; color: var(--mist); cursor: pointer; line-height: 1.45; }
-.checkline input { accent-color: var(--lime-deep); width: 18px; height: 18px; margin-top: 1px; flex: none; }
-
 /* ---------------- streak strip ---------------- */
 .streak-strip { display: flex; gap: 24px; align-items: center; }
 .streak-big { display: flex; align-items: baseline; gap: 8px; min-width: 168px; }
@@ -345,9 +328,6 @@ h3 { font-size: 20px; line-height: 1.2; letter-spacing: -0.012em; }
   .hm-cell { width: 11px; height: 11px; }
   .share textarea { min-height: 200px; font-size: 12px; padding: 14px; }
   .share-actions .btn { flex: 1 1 46%; justify-content: center; }
-  .settings-row { gap: 8px; }
-  .segmented { width: 100%; }
-  .seg { flex: 1 1 40%; text-align: center; }
   .session-foot { font-size: 11px; }
   .foot { margin-top: 28px; gap: 10px; }
 }

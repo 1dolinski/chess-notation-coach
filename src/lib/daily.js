@@ -112,14 +112,18 @@ function poolTasks(name, count, rng) {
   return out
 }
 
+// Board side is randomised by default: every rep carries the side its board should be shown from,
+// so a set mixes White and Black views instead of always reading from White's side.
+const pickSide = (rng) => (rng() < 0.5 ? 'white' : 'black')
+
 function playItem(task, type, rng, idx) {
-  return { id: `p${idx}-${task.san}-${task.to}`, kind: 'play', type, task }
+  return { id: `p${idx}-${task.san}-${task.to}`, kind: 'play', type, task, side: pickSide(rng) }
 }
 
 function readItem(item, idx, reverse, rng) {
   const hasSquare = /[a-h][1-8]/.test(item.san)
   if (!reverse || !hasSquare) {
-    return { id: `r${idx}-${item.san}`, kind: 'read', type: 'read', san: item.san, prompt: item.san, options: item.options, answer: item.answer, fen: item.fen }
+    return { id: `r${idx}-${item.san}`, kind: 'read', type: 'read', san: item.san, prompt: item.san, options: item.options, answer: item.answer, fen: item.fen, side: pickSide(rng) }
   }
   // reverse: English prompt -> pick the SAN. Build distractors by mutating the real move.
   const san = item.san
@@ -139,7 +143,7 @@ function readItem(item, idx, reverse, rng) {
   const four = options.slice(0, 4)
   return {
     id: `r${idx}-${san}-rev`, kind: 'read', type: 'read',
-    prompt: item.answer, options: four, answer: san, fen: item.fen
+    prompt: item.answer, options: four, answer: san, fen: item.fen, side: pickSide(rng)
   }
 }
 
@@ -152,11 +156,13 @@ function squareItems(dateKey, rng, count, startIdx) {
       ? anchors[(i + dayIndex(dateKey)) % anchors.length]
       : FILES[Math.floor(rng() * 8)] + (1 + Math.floor(rng() * 8))
     const mode = i % 3 === 2 ? 'color' : 'click'
-    out.push({ id: `s${startIdx + i}-${square}-${mode}`, kind: 'square', type: 'square', square, mode, color: squareColor(square) })
+    out.push({ id: `s${startIdx + i}-${square}-${mode}`, kind: 'square', type: 'square', square, mode, color: squareColor(square), side: pickSide(rng) })
   }
   return out
 }
 
+// Every other knight rep is blind: the square is named in the prompt but not marked on the board,
+// so the position has to be pictured. Mixed in by design instead of behind a settings toggle.
 function knightItems(rng, count, startIdx) {
   const out = []
   for (let i = 0; i < count; i++) {
@@ -166,7 +172,7 @@ function knightItems(rng, count, startIdx) {
       from = FILES[Math.floor(rng() * 8)] + (1 + Math.floor(rng() * 8))
       targets = knightTargets(from)
     }
-    out.push({ id: `k${startIdx + i}-${from}`, kind: 'knight', type: 'knight', from, targets })
+    out.push({ id: `k${startIdx + i}-${from}`, kind: 'knight', type: 'knight', from, targets, blind: i % 2 === 1, side: pickSide(rng) })
   }
   return out
 }
@@ -214,29 +220,29 @@ function mentalItem(rng, idx) {
   const id = `m${idx}-${from}-${shape}`
 
   if (shape === 'count') {
-    const side = sidesWithMoves[Math.floor(rng() * sidesWithMoves.length)]
-    const n = moves.filter(SIDES[side]).length
+    const dir = sidesWithMoves[Math.floor(rng() * sidesWithMoves.length)]
+    const n = moves.filter(SIDES[dir]).length
     const opts = new Set([n])
     let guard = 0
     while (opts.size < 4 && guard++ < 40) opts.add(Math.max(0, Math.min(5, n + Math.floor(rng() * 5) - 2)))
     const options = shuffle([...opts].slice(0, 4), rng).map(String)
     return {
-      id, kind: 'mental', type: 'mental', from, moves,
-      q: `Knight on ${from}: how many of its moves land to the ${side}?`,
+      id, kind: 'mental', type: 'mental', from, moves, side: pickSide(rng),
+      q: `Knight on ${from}: how many of its moves land to the ${dir}?`,
       sub: 'Answer without a board.',
       options, answer: String(n)
     }
   }
 
   if (shape === 'which') {
-    const side = sidesWithMoves[Math.floor(rng() * sidesWithMoves.length)]
-    const inSide = moves.filter(SIDES[side]).map((m) => m.to)
+    const dir = sidesWithMoves[Math.floor(rng() * sidesWithMoves.length)]
+    const inSide = moves.filter(SIDES[dir]).map((m) => m.to)
     const answer = inSide[Math.floor(rng() * inSide.length)]
     const wrongs = nonKnightSquares(from, rng, 6).slice(0, 3)
     const options = shuffle([answer, ...wrongs], rng)
     return {
-      id, kind: 'mental', type: 'mental', from, moves,
-      q: `Knight on ${from}: which of these is a knight move that goes ${side}?`,
+      id, kind: 'mental', type: 'mental', from, moves, side: pickSide(rng),
+      q: `Knight on ${from}: which of these is a knight move that goes ${dir}?`,
       sub: 'Answer without a board.',
       options, answer
     }
@@ -249,7 +255,7 @@ function mentalItem(rng, idx) {
     const real = shuffle(moves.map((m) => m.to), rng).slice(0, 3)
     const options = shuffle([answer, ...real], rng)
     return {
-      id, kind: 'mental', type: 'mental', from, moves,
+      id, kind: 'mental', type: 'mental', from, moves, side: pickSide(rng),
       q: `Knight on ${from}: which of these is NOT a knight move?`,
       sub: 'Answer without a board.',
       options, answer
@@ -259,7 +265,7 @@ function mentalItem(rng, idx) {
   const mv = moves[Math.floor(rng() * moves.length)]
   const answer = `${mv.df < 0 ? 'left' : 'right'} and ${mv.dr < 0 ? 'down' : 'up'}`
   return {
-    id, kind: 'mental', type: 'mental', from, moves, reveal: mv.to,
+    id, kind: 'mental', type: 'mental', from, moves, reveal: mv.to, side: pickSide(rng),
     q: `A knight jumps ${from} → ${mv.to}. Which way is that?`,
     sub: 'Left/right = file, up/down = rank.',
     options: shuffle(['left and up', 'left and down', 'right and up', 'right and down'], rng),
@@ -371,7 +377,7 @@ export function extraSet(seed = Date.now()) {
   items.forEach((it, i) => set.push(readItem(it, i, i % 2 === 1, rng)))
   poolTasks('capture', 3, rng).forEach((t) => set.push(playItem(t, 'play', rng, set.length)))
   poolTasks('check', 3, rng).forEach((t) => set.push(playItem(t, 'play', rng, set.length)))
-  knightItems(rng, 2, 0).forEach((k) => set.push({ ...k, id: `ke${set.length}-${k.from}` }))
+  knightItems(rng, 2, 0).forEach((k) => set.push({ ...k, id: `ke${set.length}-${k.from}`, blind: k.blind }))
   for (let i = 0; i < 2; i++) set.push(mentalItem(rng, set.length))
   return shuffle(set, rng)
 }

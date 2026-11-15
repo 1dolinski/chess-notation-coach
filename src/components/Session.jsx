@@ -18,17 +18,12 @@ function clocks(sec) {
 
 const KIND_TAG = { read: 'reading', play: 'board', square: 'grid', knight: 'knight', mental: 'mental' }
 
-function hash(str) {
-  let h = 0
-  for (let i = 0; i < str.length; i++) h = (Math.imul(h, 31) + str.charCodeAt(i)) | 0
-  return Math.abs(h)
-}
-
 // Board orientation: settings win, otherwise follow the side to move on real positions.
-export function resolveOrientation(settings, item, id = '') {
+export function resolveOrientation(settings, item) {
   const o = settings.orientation
   if (o === 'white' || o === 'black') return o
-  if (o === 'random') return hash(id || item.id || '') % 2 === 0 ? 'white' : 'black'
+  // default: the side the rep was dealt (a set mixes both sides), so notation is read from Black too
+  if (o === 'random') return item.side || 'white'
   return item.kind === 'play' ? (item.task.color === 'w' ? 'white' : 'black') : 'white'
 }
 
@@ -171,7 +166,8 @@ export default function Session({ items, title = 'Practice', onExit, onFinish, s
     }
   }
 
-  const blindKnight = !!prefs.blindKnight
+  const blindKnight = !!prefs.blindKnight || !!item.blind
+  const boardSide = resolveOrientation(prefs, item)
   const marked = {}
   if (phase === 'wrong' && item.kind === 'square') marked[item.square] = 'hit'
   if (item.kind === 'knight') {
@@ -219,7 +215,7 @@ export default function Session({ items, title = 'Practice', onExit, onFinish, s
       </div>
 
       <div className={`prompt-card ${phase}`}>
-        <div className="prompt-type">{title} · {KIND_TAG[item.kind] || item.kind}{item.kind !== 'play' && prefs.orientation !== 'auto' ? ` · ${prefs.orientation} view` : ''}</div>
+        <div className="prompt-type">{title} · {KIND_TAG[item.kind] || item.kind} · {boardSide} board</div>
         <div className={`prompt-main ${item.kind === 'mental' ? 'long' : ''}`}>{prompt}</div>
         <div className="prompt-sub">{phase === 'ask' ? sub : feedback}</div>
       </div>
@@ -227,14 +223,14 @@ export default function Session({ items, title = 'Practice', onExit, onFinish, s
       {item.kind === 'play' && (
         <Board
           fen={item.task.fen} onSquare={onSquare} marked={marked}
-          coords={prefs.coords} orientation={resolveOrientation(prefs, item)}
+          coords={prefs.coords} orientation={boardSide}
         />
       )}
       {(item.kind === 'square' && item.mode === 'click') && (
-        <Board onSquare={onSquare} marked={marked} coords={prefs.coords} orientation={resolveOrientation(prefs, item)} />
+        <Board onSquare={onSquare} marked={marked} coords={prefs.coords} orientation={boardSide} />
       )}
       {item.kind === 'knight' && (
-        <Board onSquare={onSquare} marked={marked} coords={true} orientation={resolveOrientation(prefs, item)} />
+        <Board onSquare={onSquare} marked={marked} coords={true} orientation={boardSide} />
       )}
 
       {/* mental drills are answered from memory, then shown on the board */}
@@ -242,7 +238,7 @@ export default function Session({ items, title = 'Practice', onExit, onFinish, s
         <Board
           marked={marked} coords={true} selectable={false} size={320}
           pieces={{ [item.from]: { type: 'n', color: 'w' } }}
-          orientation={resolveOrientation(prefs, item)}
+          orientation={boardSide}
         />
       )}
 

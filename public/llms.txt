@@ -22,17 +22,18 @@ An adult improver who can read algebraic notation but slowly — they still tran
 The app drills five things:
 
 1. `grid` — click a named square on an empty board (corners and centre first), or say light/dark.
-2. `knight` — click every square a knight can reach from the marked square. With the "blind knight"
-   setting on, the knight's square is hidden, so the player has to picture where it stands.
+2. `knight` — click every square a knight can reach from the marked square. Every second knight rep is
+   blind: the square is named in the prompt but not marked on the board, so it has to be pictured.
 3. `read` — SAN to plain English ("Nxe5+" = "Knight takes e5, check"), and the reverse.
 4. `play` — a real position from a world championship game: read the move, then make it on the board.
 5. `mental` — geometry questions answered with no board at all: "knight on b5 — how many of its moves
    land to the left?", "which of these is NOT a knight move from f3?", "a knight jumps g1 → e2: left
    and up, or right and down?". The board is revealed after the answer.
 
-Board orientation is a setting: side-to-move (default), White, Black or Random. On Black the whole
-board is flipped — files run h→a, ranks top-down — while the prompts stay in normal algebraic
-notation, so the player practises reading notation from Black's side too.
+Board side is **randomised by default**: each rep deterministically picks White or Black from its own id,
+and on Black the whole board is flipped (files run h→a, ranks top-down) while the prompt stays in normal
+algebraic notation. The drill tag above the prompt says which side the board is showing ("black board").
+There is no orientation control in the UI on purpose — every session mixes both sides.
 
 ## Streak rules (state these accurately)
 

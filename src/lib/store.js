@@ -3,15 +3,20 @@
 const KEY = 'notation-coach-v1'
 const DEFAULT_GOAL = 10
 
-// Drill preferences. `orientation` flips the board so notation can be read from Black's side.
+// Drill preferences. Board side is randomised by default (each rep picks a side deterministically from its id), so
+// notation gets read from Black's side as often as White's. Kept in the store rather than a UI panel
+// so it survives reloads and travels inside the export code.
 export const DEFAULT_SETTINGS = {
-  orientation: 'auto', // auto = the side to move | white | black | random
-  blindKnight: false,  // hide the knight's square: you must picture where it stands
-  coords: false        // show file/rank labels on the board
+  orientation: 'random', // random (default) | auto = side to move | white | black
+  blindKnight: false,    // extra switch; half the knight reps are already blind by design
+  coords: false          // show file/rank labels on the board
 }
 
 function normaliseSettings(s = {}) {
-  const o = ['auto', 'white', 'black', 'random'].includes(s.orientation) ? s.orientation : 'auto'
+  // 'auto' was the old default (follow the side to move); it now means the same as 'random', so a
+  // stored legacy value cannot leave someone stuck on White-only boards.
+  const stored = s.orientation === 'auto' ? 'random' : s.orientation
+  const o = ['white', 'black', 'random'].includes(stored) ? stored : 'random'
   return { orientation: o, blindKnight: !!s.blindKnight, coords: !!s.coords }
 }
 

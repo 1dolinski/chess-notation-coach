@@ -13,11 +13,12 @@ Live: https://chess-notation-coach.vercel.app/
 - **Adaptive coaching.** The weakest drill type (lifetime accuracy under 75%) gets extra reps appended, and the
   coach card explains why. Optional `src/data/coach-feed.json` lets an LLM/bot pin a day's headline and theme.
 - **Five drill kinds:** grid recall (click the named square; light or dark), knight fans (click every destination,
-  optionally blind), SAN reading in both directions, real board moves you execute by clicking, and mental geometry
+  every second rep blind), SAN reading in both directions, real board moves you execute by clicking, and mental geometry
   questions answered with no board at all ("knight on b5 — how many of its moves land to the left?").
-- **Board side is a setting:** side-to-move, White, Black or Random. Flipped to Black the whole board turns around
-  while prompts stay in algebraic notation, so notation can be read from either side. Blind-knight mode hides the
-  knight's square so you have to picture where it stands.
+- **Board side is randomised:** every rep deterministically picks White or Black, and on Black the whole board turns
+  around while the prompt stays in algebraic notation, so notation is read from both sides. Every second knight rep
+  is blind — the square is named but not marked, so it has to be pictured. (No settings panel; the defaults live in
+  the store so they survive a reload and travel inside the export code.)
 - **Streak tracking:** a day banks once you answer 10 reps (configurable). Wrong answers still count and are
   repeated at the end of the set. 16-week heatmap, per-drill accuracy, base64 export code for moving progress
   between browsers or letting a bot verify it.

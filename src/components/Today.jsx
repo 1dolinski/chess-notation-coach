@@ -3,7 +3,7 @@ import Session from './Session'
 import Hero from './Hero'
 import SharePrompt from './SharePrompt'
 import { planForDate, extraSet, mentalSet, meta, diagnosis } from '../lib/daily'
-import { loadState, streakInfo, todayKey, dayOf, setSetting } from '../lib/store'
+import { loadState, streakInfo, todayKey, dayOf } from '../lib/store'
 
 const KIND_LABEL = {
   square: 'grid recall',
@@ -12,13 +12,6 @@ const KIND_LABEL = {
   play: 'make the move',
   mental: 'mental tricks'
 }
-
-const ORIENTATIONS = [
-  ['auto', 'Side to move'],
-  ['white', 'White'],
-  ['black', 'Black'],
-  ['random', 'Random']
-]
 
 export default function Today({ dateKey = todayKey(), themeOverride = null, onNavigate }) {
   const [state, setState] = useState(() => loadState())
@@ -55,7 +48,6 @@ export default function Today({ dateKey = todayKey(), themeOverride = null, onNa
   const isToday = dateKey === todayKey()
   const target = info.goal
   const pct = Math.min(100, Math.round((day.attempted / target) * 100))
-  const setPref = (k, v) => setState(setSetting(k, v))
 
   return (
     <div className="page">
@@ -87,43 +79,6 @@ export default function Today({ dateKey = todayKey(), themeOverride = null, onNa
             <span>best {info.best} days</span>
             <button className="link" onClick={() => onNavigate('#/streak')}>full history →</button>
           </div>
-        </div>
-      </div>
-
-      <div className="panel">
-        <div className="panel-head">
-          <h3>Board &amp; drill settings</h3>
-          <span className="small">saved in this browser</span>
-        </div>
-        <div className="settings-row">
-          <span className="settings-label">Board side</span>
-          <div className="segmented">
-            {ORIENTATIONS.map(([value, label]) => (
-              <button
-                key={value}
-                className={`seg ${prefs.orientation === value ? 'on' : ''}`}
-                onClick={() => setPref('orientation', value)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-        <p className="small">
-          Flip to <b>Black</b> (or Random) to read notation from Black’s side — files run h→a and ranks top-down, and the
-          prompts stay in normal algebraic notation. Move drills follow the side to move when this is “Side to move”.
-        </p>
-        <div className="settings-row">
-          <label className="checkline">
-            <input type="checkbox" checked={prefs.blindKnight} onChange={(e) => setPref('blindKnight', e.target.checked)} />
-            Blind knight — hide the knight’s square so you have to picture where it stands
-          </label>
-        </div>
-        <div className="settings-row">
-          <label className="checkline">
-            <input type="checkbox" checked={prefs.coords} onChange={(e) => setPref('coords', e.target.checked)} />
-            Show file/rank coordinates on the board
-          </label>
         </div>
       </div>
 
