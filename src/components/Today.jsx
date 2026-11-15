@@ -103,7 +103,7 @@ export default function Today({ dateKey = todayKey(), themeOverride = null, onNa
 
       <p className="footer-note">
         Positions from {meta.games} world championship games (1886–2018) · drill build {meta.generated} ·{' '}
-        <a href="./llms.txt" target="_blank" rel="noreferrer">llms.txt</a> for your reminder bot
+        <a href="./skill.txt" target="_blank" rel="noreferrer">skill.txt</a> for your reminder bot
       </p>
     </div>
   )

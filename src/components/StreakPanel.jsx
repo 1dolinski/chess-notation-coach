@@ -136,7 +136,7 @@ export default function StreakPanel({ onNavigate }) {
       <div className="panel">
         <h3>Keep the streak alive with a bot</h3>
         <p className="small">
-          Give <a href="./llms.txt" target="_blank" rel="noreferrer">/llms.txt</a> to Muse, Grok or any assistant with a scheduler.
+          Give <a href="./skill.txt" target="_blank" rel="noreferrer">/skill.txt</a> to Muse, Grok or any assistant with a scheduler.
           It contains the daily reminder prompt, the deep link for each date, and the coach-feed format for overriding tomorrow’s set.
         </p>
         <div className="row">
