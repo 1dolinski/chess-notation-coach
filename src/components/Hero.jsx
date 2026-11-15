@@ -12,7 +12,7 @@ function prettyDate(key) {
   return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })
 }
 
-export default function Hero({ plan, info, dateKey, isToday, onStart, onExtra, coords, setCoords }) {
+export default function Hero({ plan, info, dateKey, isToday, onStart, onExtra, onMental }) {
   const breakdown = plan.items.reduce((acc, it) => {
     acc[it.kind] = (acc[it.kind] || 0) + 1
     return acc
@@ -38,10 +38,7 @@ export default function Hero({ plan, info, dateKey, isToday, onStart, onExtra, c
         <div className="hero-cta">
           <button className="btn primary big" onClick={onStart}>Start {plan.items.length}-rep set</button>
           <button className="btn ghost" onClick={onExtra}>Extra reps</button>
-          <label className="toggle">
-            <input type="checkbox" checked={coords} onChange={(e) => setCoords(e.target.checked)} />
-            show coordinates
-          </label>
+          <button className="btn ghost" onClick={onMental}>Mental reps</button>
         </div>
         <p className="small">{plan.tip}</p>
         {!isToday && <p className="small">Set for {dateKey} — reps still count toward today’s streak.</p>}

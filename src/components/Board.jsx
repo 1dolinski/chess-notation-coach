@@ -19,7 +19,8 @@ export function parseFen(fen) {
 }
 
 export default function Board({
-  fen = null, orientation = 'white', onSquare = null, marked = {}, selectable = true, size = 480, coords = false
+  fen = null, orientation = 'white', onSquare = null, marked = {}, selectable = true, size = 480, coords = false,
+  pieces = {} // extra piece overlays for empty boards, e.g. { b5: { type: 'n', color: 'w' } }
 }) {
   const [vp, setVp] = useState(() => (typeof window === 'undefined' ? { w: 900, h: 900 } : { w: window.innerWidth, h: window.innerHeight }))
   useEffect(() => {
@@ -40,7 +41,7 @@ export default function Board({
       {ranks.map((rank) => files.map((file) => {
         const square = file + rank
         const dark = (FILES.indexOf(file) + rank - 1) % 2 === 0
-        const piece = board[square]
+        const piece = board[square] || pieces[square]
         const mark = marked[square] || ''
         return (
           <div

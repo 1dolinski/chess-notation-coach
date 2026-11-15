@@ -75,6 +75,20 @@ export function themeFor(dateKey) {
 
 const KNIGHT_DELTAS = [[1, 2], [2, 1], [-1, 2], [-2, 1], [1, -2], [2, -1], [-1, -2], [-2, -1]]
 
+// Knight moves with their direction deltas, used by the mental-geometry drills.
+export function knightMoves(square) {
+  const f = FILES.indexOf(square[0])
+  const r = Number(square[1]) - 1
+  return KNIGHT_DELTAS
+    .map(([df, dr]) => {
+      const nf = f + df
+      const nr = r + dr
+      if (nf < 0 || nf > 7 || nr < 0 || nr > 7) return null
+      return { to: FILES[nf] + (nr + 1), df, dr }
+    })
+    .filter(Boolean)
+}
+
 export function knightTargets(square) {
   const f = FILES.indexOf(square[0])
   const r = Number(square[1]) - 1
@@ -157,6 +171,102 @@ function knightItems(rng, count, startIdx) {
   return out
 }
 
+const SIDES = {
+  left: (m) => m.df < 0,
+  right: (m) => m.df > 0,
+  up: (m) => m.dr > 0,
+  down: (m) => m.dr < 0
+}
+
+const randomSquare = (rng) => FILES[Math.floor(rng() * 8)] + (1 + Math.floor(rng() * 8))
+
+// Squares near `from` that a knight on `from` cannot reach — the false options.
+function nonKnightSquares(from, rng, n = 8) {
+  const moves = knightMoves(from).map((m) => m.to)
+  const f = FILES.indexOf(from[0])
+  const r = Number(from[1]) - 1
+  const out = []
+  for (let i = 0; i < 200 && out.length < n; i++) {
+    const df = Math.floor(rng() * 5) - 2
+    const dr = Math.floor(rng() * 5) - 2
+    const nf = f + df
+    const nr = r + dr
+    if (nf < 0 || nf > 7 || nr < 0 || nr > 7) continue
+    const sq = FILES[nf] + (nr + 1)
+    if (sq === from || moves.includes(sq) || out.includes(sq)) continue
+    out.push(sq)
+  }
+  return out
+}
+
+// Pure mental-geometry questions: no board, you hold the square in your head.
+// q/options are what the drill shows; from/moves/reveal are for the reveal board.
+function mentalItem(rng, idx) {
+  let from = randomSquare(rng)
+  let moves = knightMoves(from)
+  while (moves.length < 3) {
+    from = randomSquare(rng)
+    moves = knightMoves(from)
+  }
+  const sidesWithMoves = Object.keys(SIDES).filter((s) => moves.some(SIDES[s]))
+  const pool = ['count', 'which', 'notmove', 'relative']
+  const shape = pool[Math.floor(rng() * pool.length)]
+  const id = `m${idx}-${from}-${shape}`
+
+  if (shape === 'count') {
+    const side = sidesWithMoves[Math.floor(rng() * sidesWithMoves.length)]
+    const n = moves.filter(SIDES[side]).length
+    const opts = new Set([n])
+    let guard = 0
+    while (opts.size < 4 && guard++ < 40) opts.add(Math.max(0, Math.min(5, n + Math.floor(rng() * 5) - 2)))
+    const options = shuffle([...opts].slice(0, 4), rng).map(String)
+    return {
+      id, kind: 'mental', type: 'mental', from, moves,
+      q: `Knight on ${from}: how many of its moves land to the ${side}?`,
+      sub: 'Answer without a board.',
+      options, answer: String(n)
+    }
+  }
+
+  if (shape === 'which') {
+    const side = sidesWithMoves[Math.floor(rng() * sidesWithMoves.length)]
+    const inSide = moves.filter(SIDES[side]).map((m) => m.to)
+    const answer = inSide[Math.floor(rng() * inSide.length)]
+    const wrongs = nonKnightSquares(from, rng, 6).slice(0, 3)
+    const options = shuffle([answer, ...wrongs], rng)
+    return {
+      id, kind: 'mental', type: 'mental', from, moves,
+      q: `Knight on ${from}: which of these is a knight move that goes ${side}?`,
+      sub: 'Answer without a board.',
+      options, answer
+    }
+  }
+
+  if (shape === 'notmove') {
+    const wrongs = nonKnightSquares(from, rng, 6).slice(0, 3)
+    if (wrongs.length < 3) return mentalItem(rng, idx + 1000)
+    const answer = wrongs[0]
+    const real = shuffle(moves.map((m) => m.to), rng).slice(0, 3)
+    const options = shuffle([answer, ...real], rng)
+    return {
+      id, kind: 'mental', type: 'mental', from, moves,
+      q: `Knight on ${from}: which of these is NOT a knight move?`,
+      sub: 'Answer without a board.',
+      options, answer
+    }
+  }
+
+  const mv = moves[Math.floor(rng() * moves.length)]
+  const answer = `${mv.df < 0 ? 'left' : 'right'} and ${mv.dr < 0 ? 'down' : 'up'}`
+  return {
+    id, kind: 'mental', type: 'mental', from, moves, reveal: mv.to,
+    q: `A knight jumps ${from} → ${mv.to}. Which way is that?`,
+    sub: 'Left/right = file, up/down = rank.',
+    options: shuffle(['left and up', 'left and down', 'right and up', 'right and down'], rng),
+    answer
+  }
+}
+
 function shuffle(arr, rng) {
   const a = [...arr]
   for (let i = a.length - 1; i > 0; i--) {
@@ -174,7 +284,7 @@ export function diagnosis(state) {
     .map(([k, v]) => ({ type: k, accuracy: v.correct / v.attempted, attempted: v.attempted }))
     .sort((a, b) => a.accuracy - b.accuracy)
   const weak = scored[0] || null
-  const stale = ['square', 'knight', 'read', 'play'].filter((t) => {
+  const stale = ['square', 'knight', 'mental', 'read', 'play'].filter((t) => {
     const last = lastPracticed(state, t)
     return !last || last <= shiftDay(todayKey(), -4)
   })
@@ -185,7 +295,8 @@ const EXTRA_FOR_TYPE = {
   square: { kind: 'square', count: 6, label: 'square recognition' },
   knight: { kind: 'knight', count: 4, label: 'knight jumps' },
   read: { kind: 'read', count: 6, label: 'reading moves' },
-  play: { kind: 'play', count: 6, label: 'executing moves' }
+  play: { kind: 'play', count: 6, label: 'executing moves' },
+  mental: { kind: 'mental', count: 4, label: 'mental geometry' }
 }
 
 export function planForDate(dateKey = todayKey(), state = null, opts = {}) {
@@ -203,15 +314,18 @@ export function planForDate(dateKey = todayKey(), state = null, opts = {}) {
   }
   const squares = (n) => squareItems(dateKey, rng, n, 0).forEach((s) => set.push({ ...s, id: `s${set.length}-${s.square}` }))
   const knights = (n) => knightItems(rng, n, 0).forEach((k) => set.push({ ...k, id: `k${set.length}-${k.from}` }))
+  const mentals = (n) => {
+    for (let i = 0; i < n; i++) set.push(mentalItem(rng, set.length))
+  }
 
   switch (theme) {
-    case 'grid': squares(8); knights(4); read(4); break
-    case 'capture': read(4); play('capture', 8); squares(3); break
-    case 'knight': knights(6); play('knight', 6); read(3); break
-    case 'check': read(5); play('check', 8); squares(2); break
-    case 'castle': play('castle', 4); play('promo', 3); read(4); squares(2); break
-    case 'full': play('quiet', 5); play('disambig', 4); play('capture', 3); read(3); break
-    case 'speed': play('capture', 4); play('check', 4); play('knight', 2); play('castle', 2); squares(2); break
+    case 'grid': squares(8); knights(4); read(4); mentals(3); break
+    case 'capture': read(4); play('capture', 8); squares(3); mentals(2); break
+    case 'knight': knights(6); play('knight', 6); read(3); mentals(3); break
+    case 'check': read(5); play('check', 8); squares(2); mentals(2); break
+    case 'castle': play('castle', 4); play('promo', 3); read(4); squares(2); mentals(2); break
+    case 'full': play('quiet', 5); play('disambig', 4); play('capture', 3); read(3); mentals(3); break
+    case 'speed': play('capture', 4); play('check', 4); play('knight', 2); play('castle', 2); squares(2); mentals(2); break
     default: break
   }
 
@@ -224,6 +338,7 @@ export function planForDate(dateKey = todayKey(), state = null, opts = {}) {
       if (extra.kind === 'square') squares(4)
       if (extra.kind === 'knight') knights(3)
       if (extra.kind === 'read') read(4)
+      if (extra.kind === 'mental') mentals(4)
       coachNote = `You are at ${Math.round(diag.weak.accuracy * 100)}% on ${extra.label}, so 4 extra reps are appended.`
     } else if (extra && extra.kind === 'play') {
       play(diag.weak.type === 'play' ? 'capture' : 'capture', 4)
@@ -257,7 +372,16 @@ export function extraSet(seed = Date.now()) {
   poolTasks('capture', 3, rng).forEach((t) => set.push(playItem(t, 'play', rng, set.length)))
   poolTasks('check', 3, rng).forEach((t) => set.push(playItem(t, 'play', rng, set.length)))
   knightItems(rng, 2, 0).forEach((k) => set.push({ ...k, id: `ke${set.length}-${k.from}` }))
+  for (let i = 0; i < 2; i++) set.push(mentalItem(rng, set.length))
   return shuffle(set, rng)
+}
+
+// A mental-only set: geometry questions with no board, for the commute.
+export function mentalSet(n = 10, seed = Date.now()) {
+  const rng = mulberry32(hash('mental' + seed))
+  const set = []
+  for (let i = 0; i < n; i++) set.push(mentalItem(rng, i))
+  return set
 }
 
 export { drills }

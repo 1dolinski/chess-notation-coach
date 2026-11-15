@@ -19,12 +19,20 @@
 ## What the user is doing
 
 An adult improver who can read algebraic notation but slowly — they still translate square by square.
-The app drills four things:
+The app drills five things:
 
 1. `grid` — click a named square on an empty board (corners and centre first), or say light/dark.
-2. `knight` — click every square a knight can reach from the marked square.
+2. `knight` — click every square a knight can reach from the marked square. With the "blind knight"
+   setting on, the knight's square is hidden, so the player has to picture where it stands.
 3. `read` — SAN to plain English ("Nxe5+" = "Knight takes e5, check"), and the reverse.
 4. `play` — a real position from a world championship game: read the move, then make it on the board.
+5. `mental` — geometry questions answered with no board at all: "knight on b5 — how many of its moves
+   land to the left?", "which of these is NOT a knight move from f3?", "a knight jumps g1 → e2: left
+   and up, or right and down?". The board is revealed after the answer.
+
+Board orientation is a setting: side-to-move (default), White, Black or Random. On Black the whole
+board is flipped — files run h→a, ranks top-down — while the prompts stay in normal algebraic
+notation, so the player practises reading notation from Black's side too.
 
 ## Streak rules (state these accurately)
 
@@ -114,7 +122,11 @@ Valid themes only. For a one-off override without deploying, use the `?theme=` l
 
 Positions come from 944 world championship games (1886–2018). Pools: capture 220, check 160,
 castle 70, promotion 42, knight 220, disambiguation 110, quiet 200, plus 400 SAN-reading items.
-Every set is deterministic for a date, so the same link is the same practice tomorrow.
+Grid, knight and mental items are generated from board geometry at load time, so they never repeat.
+Every dated set is deterministic for a date, so the same link is the same practice tomorrow.
+
+Deep links: `/#/today`, `/#/day/YYYY-MM-DD`, `/#/day/YYYY-MM-DD?theme=knight` (themes: grid, capture,
+knight, check, castle, full, speed), `/#/streak`.
 
 ## Etiquette for agents
 

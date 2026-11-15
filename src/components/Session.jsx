@@ -16,7 +16,23 @@ function clocks(sec) {
   return `${m}:${String(s).padStart(2, '0')}`
 }
 
-export default function Session({ items, title = 'Practice', onExit, onFinish, coords = false }) {
+const KIND_TAG = { read: 'reading', play: 'board', square: 'grid', knight: 'knight', mental: 'mental' }
+
+function hash(str) {
+  let h = 0
+  for (let i = 0; i < str.length; i++) h = (Math.imul(h, 31) + str.charCodeAt(i)) | 0
+  return Math.abs(h)
+}
+
+// Board orientation: settings win, otherwise follow the side to move on real positions.
+export function resolveOrientation(settings, item, id = '') {
+  const o = settings.orientation
+  if (o === 'white' || o === 'black') return o
+  if (o === 'random') return hash(id || item.id || '') % 2 === 0 ? 'white' : 'black'
+  return item.kind === 'play' ? (item.task.color === 'w' ? 'white' : 'black') : 'white'
+}
+
+export default function Session({ items, title = 'Practice', onExit, onFinish, settings = null }) {
   const [queue, setQueue] = useState(items)
   const [pos, setPos] = useState(0)
   const [phase, setPhase] = useState('ask') // ask | right | wrong | done
@@ -28,6 +44,7 @@ export default function Session({ items, title = 'Practice', onExit, onFinish, c
   const [log, setLog] = useState([])
   const [elapsed, setElapsed] = useState(0)
   const [streak, setStreak] = useState(() => streakInfo(loadState()))
+  const prefs = settings || loadState().settings
   const started = useRef(Date.now())
   const itemStart = useRef(Date.now())
   const timer = useRef(null)
@@ -105,6 +122,10 @@ export default function Session({ items, title = 'Practice', onExit, onFinish, c
   function answerRead(opt) {
     if (phase !== 'ask') return
     const right = opt === item.answer
+    if (item.kind === 'mental') {
+      commit(right, right ? `✓ ${item.answer}` : `✗ answer: ${item.answer} (knight on ${item.from} reaches ${item.moves.map((m) => m.to).join(' ')})`)
+      return
+    }
     commit(right, right ? `✓ ${item.prompt} = ${item.answer}` : `✗ ${item.prompt} means "${item.answer}"`)
   }
 
@@ -150,12 +171,17 @@ export default function Session({ items, title = 'Practice', onExit, onFinish, c
     }
   }
 
+  const blindKnight = !!prefs.blindKnight
   const marked = {}
   if (phase === 'wrong' && item.kind === 'square') marked[item.square] = 'hit'
   if (item.kind === 'knight') {
-    marked[item.from] = 'target'
+    if (!blindKnight || phase !== 'ask') marked[item.from] = 'target' // blind mode: no ring until the answer is revealed
     found.forEach((f) => { marked[f] = 'hit' })
     if (phase === 'wrong') item.targets.forEach((t) => { if (!found.includes(t)) marked[t] = 'hit' })
+  }
+  if (item.kind === 'mental' && phase !== 'ask') {
+    marked[item.from] = 'target'
+    item.moves.forEach((m) => { marked[m.to] = 'hit' })
   }
   if (item.kind === 'play') {
     if (pick) marked[pick] = 'target'
@@ -170,7 +196,12 @@ export default function Session({ items, title = 'Practice', onExit, onFinish, c
     sub = item.mode === 'color' ? 'Colour is decided by file+rank parity.' : 'No coordinates shown. Use the anchors.'
   } else if (item.kind === 'knight') {
     prompt = `N from ${item.from} — click every square it can reach`
-    sub = `${found.length}/${item.targets.length} found`
+    sub = blindKnight
+      ? `${found.length}/${item.targets.length} found · knight not shown, picture where it stands`
+      : `${found.length}/${item.targets.length} found`
+  } else if (item.kind === 'mental') {
+    prompt = item.q
+    sub = item.sub
   } else if (item.kind === 'play') {
     prompt = item.task.san
     sub = item.task.color === 'w' ? 'White to move' : 'Black to move'
@@ -188,16 +219,32 @@ export default function Session({ items, title = 'Practice', onExit, onFinish, c
       </div>
 
       <div className={`prompt-card ${phase}`}>
-        <div className="prompt-type">{title}{item.kind === 'read' ? ' · reading' : item.kind === 'play' ? ' · board' : item.kind === 'square' ? ' · grid' : ' · knight'}</div>
-        <div className="prompt-main">{prompt}</div>
+        <div className="prompt-type">{title} · {KIND_TAG[item.kind] || item.kind}{item.kind !== 'play' && prefs.orientation !== 'auto' ? ` · ${prefs.orientation} view` : ''}</div>
+        <div className={`prompt-main ${item.kind === 'mental' ? 'long' : ''}`}>{prompt}</div>
         <div className="prompt-sub">{phase === 'ask' ? sub : feedback}</div>
       </div>
 
       {item.kind === 'play' && (
-        <Board fen={item.task.fen} onSquare={onSquare} marked={marked} coords={coords} orientation={item.task.color === 'w' ? 'white' : 'black'} />
+        <Board
+          fen={item.task.fen} onSquare={onSquare} marked={marked}
+          coords={prefs.coords} orientation={resolveOrientation(prefs, item)}
+        />
       )}
-      {(item.kind === 'square' && item.mode === 'click') && <Board onSquare={onSquare} marked={marked} coords={false} />}
-      {item.kind === 'knight' && <Board onSquare={onSquare} marked={marked} coords={true} />}
+      {(item.kind === 'square' && item.mode === 'click') && (
+        <Board onSquare={onSquare} marked={marked} coords={prefs.coords} orientation={resolveOrientation(prefs, item)} />
+      )}
+      {item.kind === 'knight' && (
+        <Board onSquare={onSquare} marked={marked} coords={true} orientation={resolveOrientation(prefs, item)} />
+      )}
+
+      {/* mental drills are answered from memory, then shown on the board */}
+      {item.kind === 'mental' && phase !== 'ask' && (
+        <Board
+          marked={marked} coords={true} selectable={false} size={320}
+          pieces={{ [item.from]: { type: 'n', color: 'w' } }}
+          orientation={resolveOrientation(prefs, item)}
+        />
+      )}
 
       {item.kind === 'square' && item.mode === 'color' && (
         <div className="row">
@@ -206,7 +253,7 @@ export default function Session({ items, title = 'Practice', onExit, onFinish, c
         </div>
       )}
 
-      {item.kind === 'read' && (
+      {(item.kind === 'read' || item.kind === 'mental') && (
         <div className="options">
           {item.options.map((opt) => (
             <button

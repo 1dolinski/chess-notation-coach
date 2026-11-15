@@ -3,7 +3,7 @@ import {
   loadState, streakInfo, todayKey, shiftDay, dayOf, setGoal, exportCode, importCode, typeStats
 } from '../lib/store'
 
-const TYPE_LABEL = { square: 'Grid recall', knight: 'Knight jumps', read: 'Reading moves', play: 'Making moves' }
+const TYPE_LABEL = { square: 'Grid recall', knight: 'Knight jumps', mental: 'Mental tricks', read: 'Reading moves', play: 'Making moves' }
 
 export default function StreakPanel({ onNavigate }) {
   const [state, setState] = useState(() => loadState())

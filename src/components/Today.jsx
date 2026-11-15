@@ -1,34 +1,51 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import Session from './Session'
 import Hero from './Hero'
 import SharePrompt from './SharePrompt'
-import { planForDate, extraSet, meta, diagnosis } from '../lib/daily'
-import { loadState, streakInfo, todayKey, dayOf } from '../lib/store'
+import { planForDate, extraSet, mentalSet, meta, diagnosis } from '../lib/daily'
+import { loadState, streakInfo, todayKey, dayOf, setSetting } from '../lib/store'
 
 const KIND_LABEL = {
   square: 'grid recall',
   knight: 'knight jumps',
   read: 'read the move',
-  play: 'make the move'
+  play: 'make the move',
+  mental: 'mental tricks'
 }
+
+const ORIENTATIONS = [
+  ['auto', 'Side to move'],
+  ['white', 'White'],
+  ['black', 'Black'],
+  ['random', 'Random']
+]
 
 export default function Today({ dateKey = todayKey(), themeOverride = null, onNavigate }) {
   const [state, setState] = useState(() => loadState())
-  const [session, setSession] = useState(null) // 'set' | 'extra'
-  const [coords, setCoords] = useState(false)
+  const [session, setSession] = useState(null) // 'set' | 'extra' | 'mental'
+
+  const prefs = state.settings
+
+  useEffect(() => {
+    const sync = () => setState(loadState())
+    window.addEventListener('coach:progress', sync)
+    return () => window.removeEventListener('coach:progress', sync)
+  }, [])
 
   const plan = useMemo(() => planForDate(dateKey, state, { theme: themeOverride }), [dateKey, themeOverride, state.days])
   const info = useMemo(() => streakInfo(state), [state])
   const diag = useMemo(() => diagnosis(state), [state])
   const day = dayOf(state, todayKey())
 
+  const items = session === 'set' ? plan.items : session === 'extra' ? extraSet() : session === 'mental' ? mentalSet(10) : []
+
   if (session) {
     return (
       <Session
         key={session}
-        items={session === 'set' ? plan.items : extraSet()}
-        title={session === 'set' ? plan.label : 'Extra reps'}
-        coords={coords}
+        items={items}
+        title={session === 'set' ? plan.label : session === 'extra' ? 'Extra reps' : 'Mental tricks'}
+        settings={prefs}
         onExit={() => { setSession(null); setState(loadState()) }}
         onFinish={session === 'set' ? () => setSession('extra') : () => setSession(null)}
       />
@@ -38,6 +55,7 @@ export default function Today({ dateKey = todayKey(), themeOverride = null, onNa
   const isToday = dateKey === todayKey()
   const target = info.goal
   const pct = Math.min(100, Math.round((day.attempted / target) * 100))
+  const setPref = (k, v) => setState(setSetting(k, v))
 
   return (
     <div className="page">
@@ -46,10 +64,9 @@ export default function Today({ dateKey = todayKey(), themeOverride = null, onNa
         info={info}
         dateKey={dateKey}
         isToday={isToday}
-        coords={coords}
-        setCoords={setCoords}
         onStart={() => setSession('set')}
         onExtra={() => setSession('extra')}
+        onMental={() => setSession('mental')}
       />
 
       <div className="panel streak-strip">
@@ -70,6 +87,43 @@ export default function Today({ dateKey = todayKey(), themeOverride = null, onNa
             <span>best {info.best} days</span>
             <button className="link" onClick={() => onNavigate('#/streak')}>full history →</button>
           </div>
+        </div>
+      </div>
+
+      <div className="panel">
+        <div className="panel-head">
+          <h3>Board &amp; drill settings</h3>
+          <span className="small">saved in this browser</span>
+        </div>
+        <div className="settings-row">
+          <span className="settings-label">Board side</span>
+          <div className="segmented">
+            {ORIENTATIONS.map(([value, label]) => (
+              <button
+                key={value}
+                className={`seg ${prefs.orientation === value ? 'on' : ''}`}
+                onClick={() => setPref('orientation', value)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <p className="small">
+          Flip to <b>Black</b> (or Random) to read notation from Black’s side — files run h→a and ranks top-down, and the
+          prompts stay in normal algebraic notation. Move drills follow the side to move when this is “Side to move”.
+        </p>
+        <div className="settings-row">
+          <label className="checkline">
+            <input type="checkbox" checked={prefs.blindKnight} onChange={(e) => setPref('blindKnight', e.target.checked)} />
+            Blind knight — hide the knight’s square so you have to picture where it stands
+          </label>
+        </div>
+        <div className="settings-row">
+          <label className="checkline">
+            <input type="checkbox" checked={prefs.coords} onChange={(e) => setPref('coords', e.target.checked)} />
+            Show file/rank coordinates on the board
+          </label>
         </div>
       </div>
 

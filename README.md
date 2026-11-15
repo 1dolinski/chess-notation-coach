@@ -12,8 +12,12 @@ Live: https://chess-notation-coach.vercel.app/
   seeded by the date so the same link is always the same practice.
 - **Adaptive coaching.** The weakest drill type (lifetime accuracy under 75%) gets extra reps appended, and the
   coach card explains why. Optional `src/data/coach-feed.json` lets an LLM/bot pin a day's headline and theme.
-- **Four drill kinds:** grid recall (click the named square; light or dark), knight fans (click every destination),
-  SAN reading in both directions, and real board moves you execute by clicking.
+- **Five drill kinds:** grid recall (click the named square; light or dark), knight fans (click every destination,
+  optionally blind), SAN reading in both directions, real board moves you execute by clicking, and mental geometry
+  questions answered with no board at all ("knight on b5 — how many of its moves land to the left?").
+- **Board side is a setting:** side-to-move, White, Black or Random. Flipped to Black the whole board turns around
+  while prompts stay in algebraic notation, so notation can be read from either side. Blind-knight mode hides the
+  knight's square so you have to picture where it stands.
 - **Streak tracking:** a day banks once you answer 10 reps (configurable). Wrong answers still count and are
   repeated at the end of the set. 16-week heatmap, per-drill accuracy, base64 export code for moving progress
   between browsers or letting a bot verify it.
@@ -23,10 +27,11 @@ Live: https://chess-notation-coach.vercel.app/
 ## Look
 
 Visual system: Refero Styles' **Linear — "midnight precision instrument"**
-(https://styles.refero.design/style/90ce5883-bb24-4466-93f7-801cd617b0d1). Near-black substrate
-(`#08090a`), paper-white type at tight tracking, hairline borders instead of shadows, and a single
-acid-lime accent (`#e4f222`) reserved for one primary action per view. The board is monochrome
-(mist / smoke) with lime highlight rings so it never competes with the buttons.
+(https://styles.refero.design/style/90ce5883-bb24-4466-93f7-801cd617b0d1), inverted to a light
+substrate: white canvas, `#f7f7f8` cards, hairline `#e3e3e6` borders instead of shadows, and a single
+acid-lime accent (`#e4f222` fill with dark ink) reserved for one primary action per view. Because acid
+lime is invisible on white, rings, bars and heatmap fills use a darker `--lime-deep` (`#a3ac12`). The
+board is a cool monochrome pair with those rings so it never competes with the buttons.
 
 Logo and hero art were generated with `google/gemini-nano-banana-2.1` via OpenRouter and live in
 `public/logo.png` (512px), `public/favicon.png`, `public/logo.jpg` and `public/hero.jpg`.

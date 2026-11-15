@@ -3,6 +3,18 @@
 const KEY = 'notation-coach-v1'
 const DEFAULT_GOAL = 10
 
+// Drill preferences. `orientation` flips the board so notation can be read from Black's side.
+export const DEFAULT_SETTINGS = {
+  orientation: 'auto', // auto = the side to move | white | black | random
+  blindKnight: false,  // hide the knight's square: you must picture where it stands
+  coords: false        // show file/rank labels on the board
+}
+
+function normaliseSettings(s = {}) {
+  const o = ['auto', 'white', 'black', 'random'].includes(s.orientation) ? s.orientation : 'auto'
+  return { orientation: o, blindKnight: !!s.blindKnight, coords: !!s.coords }
+}
+
 export function todayKey(d = new Date()) {
   const t = new Date(d.getTime() - d.getTimezoneOffset() * 60000)
   return t.toISOString().slice(0, 10)
@@ -22,11 +34,14 @@ export function emptyDay() {
 export function loadState() {
   try {
     const raw = localStorage.getItem(KEY)
-    if (!raw) return { version: 1, days: {}, best: 0, goal: DEFAULT_GOAL, name: '' }
+    if (!raw) return { version: 1, days: {}, best: 0, goal: DEFAULT_GOAL, name: '', settings: normaliseSettings() }
     const s = JSON.parse(raw)
-    return { version: 1, days: s.days || {}, best: s.best || 0, goal: s.goal || DEFAULT_GOAL, name: s.name || '' }
+    return {
+      version: 1, days: s.days || {}, best: s.best || 0, goal: s.goal || DEFAULT_GOAL,
+      name: s.name || '', settings: normaliseSettings(s.settings)
+    }
   } catch (e) {
-    return { version: 1, days: {}, best: 0, goal: DEFAULT_GOAL, name: '' }
+    return { version: 1, days: {}, best: 0, goal: DEFAULT_GOAL, name: '', settings: normaliseSettings() }
   }
 }
 
@@ -88,6 +103,14 @@ export function recordAnswer(type, correct, ms, extra = {}) {
   return state
 }
 
+export function setSetting(key, value) {
+  const s = loadState()
+  s.settings = normaliseSettings({ ...s.settings, [key]: value })
+  saveState(s)
+  try { window.dispatchEvent(new Event('coach:progress')) } catch (e) { /* non-browser */ }
+  return s
+}
+
 export function setGoal(goal) {
   const s = loadState()
   s.goal = Math.max(1, Math.min(999, Number(goal) || DEFAULT_GOAL))
@@ -114,7 +137,7 @@ export function lastPracticed(state, type) {
 }
 
 export function exportCode(state = loadState()) {
-  return btoa(unescape(encodeURIComponent(JSON.stringify({ v: 1, days: state.days, goal: state.goal }))))
+  return btoa(unescape(encodeURIComponent(JSON.stringify({ v: 1, days: state.days, goal: state.goal, settings: state.settings }))))
 }
 
 export function importCode(code) {
@@ -122,6 +145,7 @@ export function importCode(code) {
   const s = loadState()
   s.days = { ...s.days, ...(data.days || {}) }
   if (data.goal) s.goal = data.goal
+  if (data.settings) s.settings = normaliseSettings(data.settings)
   saveState(s)
   return s
 }
