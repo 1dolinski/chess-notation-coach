@@ -36,6 +36,10 @@ The app drills five things:
    land to the left?", "which of these is NOT a knight move from f3?", "a knight jumps g1 → e2: left
    and up, or right and down?". The board is revealed after the answer.
 
+In-session review: the ◀ review button (or the ← key) steps back through the reps already answered, showing
+the question, the correct answer, what the user picked, and the position with the move highlighted. Browsing
+review never changes the score or the streak. Esc returns to the live question.
+
 Board side is **randomised by default**: each rep deterministically picks White or Black from its own id,
 and on Black the whole board is flipped (files run h→a, ranks top-down) while the prompt stays in normal
 algebraic notation. The drill tag above the prompt says which side the board is showing ("black board").

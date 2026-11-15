@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Board from './Board'
 import { recordAnswer, streakInfo, loadState } from '../lib/store'
-import { knightTargets } from '../lib/daily'
 
 const PIECE = { p: 'Pawn', n: 'Knight', b: 'Bishop', r: 'Rook', q: 'Queen', k: 'King' }
 
@@ -27,6 +26,70 @@ export function resolveOrientation(settings, item) {
   return item.kind === 'play' ? (item.task.color === 'w' ? 'white' : 'black') : 'white'
 }
 
+// Every square that matters for a rep, once the answer is known.
+function revealMarks(item) {
+  const m = {}
+  if (item.kind === 'square') m[item.square] = 'hit'
+  if (item.kind === 'knight') {
+    m[item.from] = 'target'
+    item.targets.forEach((t) => { m[t] = 'hit' })
+  }
+  if (item.kind === 'play') { m[item.task.from] = 'hit'; m[item.task.to] = 'hit' }
+  if (item.kind === 'mental') {
+    m[item.from] = 'target'
+    item.moves.forEach((x) => { m[x.to] = 'hit' })
+  }
+  if (item.kind === 'read' && item.from && item.to) { m[item.from] = 'target'; m[item.to] = 'hit' }
+  return m
+}
+
+function plainAnswer(item) {
+  if (item.kind === 'read') return item.answer
+  if (item.kind === 'mental') return item.answer
+  if (item.kind === 'square') return item.mode === 'color' ? item.color : item.square
+  if (item.kind === 'knight') return item.targets.join(' ')
+  if (item.kind === 'play') return `${item.task.san} — ${item.task.from} → ${item.task.to}`
+  return ''
+}
+
+function questionText(item) {
+  if (item.kind === 'square') return item.mode === 'color' ? `Is ${item.square} light or dark?` : `Click ${item.square}`
+  if (item.kind === 'knight') return `N from ${item.from} — click every square it can reach`
+  if (item.kind === 'mental') return item.q
+  if (item.kind === 'play') return `${item.task.san} (${item.task.color === 'w' ? 'White' : 'Black'} to move)`
+  return item.prompt
+}
+
+// One board component for every drill kind, used live and in review.
+function DrillBoard({ item, marked, onSquare, interactive = true, coords = false, side = 'white', size = 480 }) {
+  if (item.kind === 'play') {
+    return (
+      <Board
+        fen={item.task.fen} marked={marked} coords={coords} orientation={side}
+        onSquare={interactive ? onSquare : null} selectable={interactive}
+      />
+    )
+  }
+  if (item.kind === 'square' && item.mode === 'click') {
+    return <Board marked={marked} coords={coords} orientation={side} onSquare={interactive ? onSquare : null} selectable={interactive} />
+  }
+  if (item.kind === 'knight') {
+    return <Board marked={marked} coords={true} orientation={side} onSquare={interactive ? onSquare : null} selectable={interactive} />
+  }
+  if (item.kind === 'mental') {
+    return (
+      <Board
+        marked={marked} coords={true} selectable={false} size={size}
+        pieces={{ [item.from]: { type: 'n', color: 'w' } }} orientation={side}
+      />
+    )
+  }
+  if (item.kind === 'read' && item.fen) {
+    return <Board fen={item.fen} marked={marked} coords={coords} orientation={side} selectable={false} />
+  }
+  return null
+}
+
 export default function Session({ items, title = 'Practice', onExit, onFinish, settings = null }) {
   const [queue, setQueue] = useState(items)
   const [pos, setPos] = useState(0)
@@ -37,6 +100,8 @@ export default function Session({ items, title = 'Practice', onExit, onFinish, s
   const [pick, setPick] = useState(null)
   const [nudge, setNudge] = useState('')
   const [log, setLog] = useState([])
+  const [history, setHistory] = useState([]) // answered reps, newest last
+  const [review, setReview] = useState(null) // null = live question, else index into history
   const [elapsed, setElapsed] = useState(0)
   const [streak, setStreak] = useState(() => streakInfo(loadState()))
   const prefs = settings || loadState().settings
@@ -62,10 +127,24 @@ export default function Session({ items, title = 'Practice', onExit, onFinish, s
 
   useEffect(() => () => clearTimeout(timer.current), [])
 
-  const rightAnswers = useMemo(() => {
-    if (!item) return 0
-    return log.filter((l) => l.correct).length
-  }, [log, item])
+  const rightAnswers = useMemo(() => log.filter((l) => l.correct).length, [log])
+
+  // keyboard: ← steps back into the review, ←/→ walk it, Esc returns to the live question
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'Escape') { setReview(null); return }
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+      if (review === null && e.key === 'ArrowLeft' && history.length) {
+        setReview(history.length - 1)
+        return
+      }
+      if (review === null) return
+      if (e.key === 'ArrowLeft') setReview((i) => Math.max(0, i - 1))
+      if (e.key === 'ArrowRight') setReview((i) => (i >= history.length - 1 ? null : i + 1))
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [review, history.length])
 
   if (!item || phase === 'done') {
     const attempts = log.length
@@ -87,14 +166,16 @@ export default function Session({ items, title = 'Practice', onExit, onFinish, s
         <div className="row">
           <button className="btn primary" onClick={onExit}>Back to today</button>
           {onFinish && <button className="btn" onClick={onFinish}>Extra reps</button>}
+          {history.length > 0 && <button className="btn ghost" onClick={() => setReview(history.length - 1)}>Review {history.length} reps</button>}
         </div>
       </div>
     )
   }
 
-  function commit(correct, detail = '') {
+  function commit(correct, detail = '', chosen = '') {
     const ms = Date.now() - itemStart.current
     setLog((l) => [...l, { type: item.type, correct, ms }])
+    setHistory((h) => [...h, { item, correct, detail, chosen, ms, n: pos + 1 }])
     recordAnswer(item.type, correct, ms)
     setStreak(streakInfo(loadState()))
     setPhase(correct ? 'right' : 'wrong')
@@ -118,16 +199,16 @@ export default function Session({ items, title = 'Practice', onExit, onFinish, s
     if (phase !== 'ask') return
     const right = opt === item.answer
     if (item.kind === 'mental') {
-      commit(right, right ? `✓ ${item.answer}` : `✗ answer: ${item.answer} (knight on ${item.from} reaches ${item.moves.map((m) => m.to).join(' ')})`)
+      commit(right, right ? `✓ ${item.answer}` : `✗ answer: ${item.answer} (knight on ${item.from} reaches ${item.moves.map((m) => m.to).join(' ')})`, opt)
       return
     }
-    commit(right, right ? `✓ ${item.prompt} = ${item.answer}` : `✗ ${item.prompt} means "${item.answer}"`)
+    commit(right, right ? `✓ ${item.prompt} = ${item.answer}` : `✗ ${item.prompt} means "${item.answer}"`, opt)
   }
 
   function onSquare(square) {
     if (phase !== 'ask') return
     if (item.kind === 'square') {
-      commit(square === item.square, square === item.square ? `✓ ${item.square}` : `✗ you clicked ${square}; ${item.square} is highlighted`)
+      commit(square === item.square, square === item.square ? `✓ ${item.square}` : `✗ you clicked ${square}; ${item.square} is highlighted`, square)
       return
     }
     if (item.kind === 'knight') {
@@ -137,10 +218,11 @@ export default function Session({ items, title = 'Practice', onExit, onFinish, s
         foundRef.current = next
         setFound(next)
         if (next.length === item.targets.length) {
-          commit(true, `✓ all ${item.targets.length} knight squares: ${item.targets.join(' ')}`)
+          commit(true, `✓ all ${item.targets.length} knight squares: ${item.targets.join(' ')}`, next.join(' '))
         }
       } else {
-        commit(false, `✗ ${square} is not a knight move from ${item.from}. Answer: ${item.targets.join(' ')}`)
+        const tried = [...foundRef.current, square]
+        commit(false, `✗ ${square} is not a knight move from ${item.from}. Answer: ${item.targets.join(' ')}`, tried.join(' '))
         foundRef.current = item.targets
         setFound(item.targets)
       }
@@ -158,13 +240,72 @@ export default function Session({ items, title = 'Practice', onExit, onFinish, s
         return
       }
       if (square === t.to) {
-        commit(true, `✓ ${t.san}`)
+        commit(true, `✓ ${t.san}`, square)
       } else {
         setPick(null)
-        commit(false, `✗ ${t.san} moves ${t.from} → ${t.to}`)
+        commit(false, `✗ ${t.san} moves ${t.from} → ${t.to}`, square)
       }
     }
   }
+
+  /* ------------------------------- review view ------------------------------- */
+
+  if (review !== null && history[review]) {
+    const h = history[review]
+    const r = h.item
+    const side = resolveOrientation(prefs, r)
+    const marks = revealMarks(r)
+    return (
+      <div className="session review">
+        <div className="session-head">
+          <button className="btn ghost" onClick={() => setReview(null)}>Back to question</button>
+          <div className="progress-track"><div className="progress-fill" style={{ width: `${(review / Math.max(1, history.length)) * 100}%` }} /></div>
+          <div className="session-meta">review {review + 1}/{history.length}</div>
+        </div>
+
+        <div className={`prompt-card ${h.correct ? 'right' : 'wrong'}`}>
+          <div className="prompt-type">
+            Review · rep {h.n} · {KIND_TAG[r.kind] || r.kind} · {side} board · {h.correct ? 'answered right' : 'missed'}
+          </div>
+          <div className={`prompt-main ${r.kind === 'mental' ? 'long' : ''}`}>{questionText(r)}</div>
+          <div className="prompt-sub">
+            answer: <b>{plainAnswer(r)}</b>
+            {h.chosen && h.chosen !== plainAnswer(r) ? ` · you said: ${h.chosen}` : h.chosen ? ' · you said it right' : ''}
+          </div>
+        </div>
+
+        <DrillBoard item={r} marked={marks} interactive={false} coords={prefs.coords} side={side} size={360} />
+
+        {(r.kind === 'read' || r.kind === 'mental') && (
+          <div className="options">
+            {r.options.map((opt) => (
+              <button
+                key={opt}
+                className={`btn option ${opt === r.answer ? 'right' : (opt === h.chosen ? 'picked' : 'dim')}`}
+                disabled
+              >
+                {opt}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className="session-foot">
+          <button className="btn ghost" onClick={() => setReview(Math.max(0, review - 1))} disabled={review === 0}>◀ prev</button>
+          <span>{review + 1} of {history.length}</span>
+          <button
+            className="btn ghost"
+            onClick={() => setReview(review >= history.length - 1 ? null : review + 1)}
+          >
+            {review >= history.length - 1 ? 'live question ▶' : 'next ▶'}
+          </button>
+          <span className="review-hint">← → to walk, Esc to resume</span>
+        </div>
+      </div>
+    )
+  }
+
+  /* ------------------------------- live question ------------------------------ */
 
   const blindKnight = !!prefs.blindKnight || !!item.blind
   const boardSide = resolveOrientation(prefs, item)
@@ -206,8 +347,11 @@ export default function Session({ items, title = 'Practice', onExit, onFinish, s
     sub = item.kind === 'read' ? 'What does this move say?' : ''
   }
 
+  const showBoard = item.kind === 'play' || (item.kind === 'square' && item.mode === 'click') ||
+    item.kind === 'knight' || (item.kind === 'mental' && phase !== 'ask')
+
   return (
-    <div className={`session ${item.kind === 'play' ? 'with-board' : ''}`}>
+    <div className="session">
       <div className="session-head">
         <button className="btn ghost" onClick={onExit}>Exit</button>
         <div className="progress-track"><div className="progress-fill" style={{ width: `${(pos / queue.length) * 100}%` }} /></div>
@@ -220,32 +364,17 @@ export default function Session({ items, title = 'Practice', onExit, onFinish, s
         <div className="prompt-sub">{phase === 'ask' ? sub : feedback}</div>
       </div>
 
-      {item.kind === 'play' && (
-        <Board
-          fen={item.task.fen} onSquare={onSquare} marked={marked}
-          coords={prefs.coords} orientation={boardSide}
-        />
-      )}
-      {(item.kind === 'square' && item.mode === 'click') && (
-        <Board onSquare={onSquare} marked={marked} coords={prefs.coords} orientation={boardSide} />
-      )}
-      {item.kind === 'knight' && (
-        <Board onSquare={onSquare} marked={marked} coords={true} orientation={boardSide} />
-      )}
-
-      {/* mental drills are answered from memory, then shown on the board */}
-      {item.kind === 'mental' && phase !== 'ask' && (
-        <Board
-          marked={marked} coords={true} selectable={false} size={320}
-          pieces={{ [item.from]: { type: 'n', color: 'w' } }}
-          orientation={boardSide}
+      {showBoard && (
+        <DrillBoard
+          item={item} marked={marked} onSquare={onSquare} interactive={phase === 'ask'}
+          coords={prefs.coords} side={boardSide} size={480}
         />
       )}
 
       {item.kind === 'square' && item.mode === 'color' && (
         <div className="row">
-          <button className="btn" onClick={() => commit(item.color === 'light', `✓ ${item.square} is ${item.color}`)}>Light</button>
-          <button className="btn" onClick={() => commit(item.color === 'dark', `✓ ${item.square} is ${item.color}`)}>Dark</button>
+          <button className="btn" onClick={() => commit(item.color === 'light', `✓ ${item.square} is ${item.color}`, 'Light')}>Light</button>
+          <button className="btn" onClick={() => commit(item.color === 'dark', `✓ ${item.square} is ${item.color}`, 'Dark')}>Dark</button>
         </div>
       )}
 
@@ -272,11 +401,16 @@ export default function Session({ items, title = 'Practice', onExit, onFinish, s
 
       <div className="session-foot">
         <span>{rightAnswers} correct</span>
-        <span className="dot-sep">·</span>
+        <span>·</span>
         <span>streak {streak.current}</span>
-        {item.kind === 'read' && phase === 'ask' && item.fen && (
-          <span className="fen-peek">{item.fen.split(' ')[1] === 'w' ? 'White' : 'Black'} to move</span>
-        )}
+        <button
+          className="btn ghost small-btn"
+          onClick={() => history.length && setReview(history.length - 1)}
+          disabled={!history.length}
+          title="Look back at the reps you have already answered (←)"
+        >
+          ◀ review {history.length ? `(${history.length})` : ''}
+        </button>
       </div>
     </div>
   )

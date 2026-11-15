@@ -123,7 +123,8 @@ function playItem(task, type, rng, idx) {
 function readItem(item, idx, reverse, rng) {
   const hasSquare = /[a-h][1-8]/.test(item.san)
   if (!reverse || !hasSquare) {
-    return { id: `r${idx}-${item.san}`, kind: 'read', type: 'read', san: item.san, prompt: item.san, options: item.options, answer: item.answer, fen: item.fen, side: pickSide(rng) }
+    // from/to ride along so the review view can show the position with the move highlighted
+    return { id: `r${idx}-${item.san}`, kind: 'read', type: 'read', san: item.san, prompt: item.san, options: item.options, answer: item.answer, fen: item.fen, from: item.from, to: item.to, side: pickSide(rng) }
   }
   // reverse: English prompt -> pick the SAN. Build distractors by mutating the real move.
   const san = item.san
@@ -143,7 +144,7 @@ function readItem(item, idx, reverse, rng) {
   const four = options.slice(0, 4)
   return {
     id: `r${idx}-${san}-rev`, kind: 'read', type: 'read',
-    prompt: item.answer, options: four, answer: san, fen: item.fen, side: pickSide(rng)
+    prompt: item.answer, options: four, answer: san, fen: item.fen, from: item.from, to: item.to, side: pickSide(rng)
   }
 }
 

@@ -240,7 +240,15 @@ h3 { font-size: 20px; line-height: 1.2; letter-spacing: -0.012em; }
 .options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .option { text-align: left; padding: 16px; font-size: 15px; min-height: 52px; }
 .option.right { border-color: var(--lime-deep); background: var(--lime-wash); color: var(--paper); }
+.option.picked { border-color: var(--coral); background: #fdf0f0; color: var(--paper); }
 .option.dim { opacity: 0.4; }
+
+/* ---------------- review ---------------- */
+.review .prompt-sub b { color: var(--paper); font-weight: 510; }
+.review-hint { color: var(--ash); font-size: 11px; }
+.session-foot .btn {
+  min-height: 34px; padding: 6px 11px; font-size: 12px;
+}
 
 .hint { text-align: center; font-size: 13px; color: var(--fog); margin: 0; }
 .session-foot {
