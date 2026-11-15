@@ -61,6 +61,7 @@ export default function App() {
         <a href="./builder-log.txt" target="_blank" rel="noreferrer">builder log</a>
         <a href="./skill.txt" target="_blank" rel="noreferrer">skill.txt</a>
         <a href="./llms.txt" target="_blank" rel="noreferrer">llms.txt</a>
+        <a href="https://github.com/1dolinski/chess-notation-coach" target="_blank" rel="noreferrer">source</a>
       </footer>
     </div>
   )

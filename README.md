@@ -5,6 +5,7 @@ Forked from [mattjliu/Notation-Trainer](https://github.com/mattjliu/Notation-Tra
 from 944 world championship games (1886–2018); everything around them is new.
 
 Live: https://chess-notation-coach.vercel.app/
+Source: https://github.com/1dolinski/chess-notation-coach (MIT)
 
 ## What it does
 
