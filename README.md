@@ -40,9 +40,9 @@ Logo and hero art were generated with `google/gemini-nano-banana-2.1` via OpenRo
 
 ## Give this to your AI
 
-The homepage carries a big editable prompt block holding one line — `Read <site>/skill.txt and follow the
-instructions.` — with copy buttons for the prompt, `skill.txt` and the practice link. Editing it saves to
-localStorage, so a user can name their own assistant or their own time without touching the app.
+The homepage carries a single-line prompt field holding `Read <site>/skill.txt and follow the instructions.`,
+with the copy button inside the field and an "open the instructions" link underneath. It is editable and saves
+to localStorage, so a user can name their own assistant or their own time without touching the app.
 
 ## Run it
 

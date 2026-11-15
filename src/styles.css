@@ -181,17 +181,27 @@ h3 { font-size: 20px; line-height: 1.2; letter-spacing: -0.012em; }
 .share { background: var(--void); }
 .share-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
 .share-head h3 { font-size: 22px; }
-.share textarea {
-  width: 100%; min-height: 260px; resize: vertical;
-  background: var(--carbon); color: var(--mist);
-  border: 1px solid var(--smoke); border-radius: var(--r-input);
-  padding: 16px 18px;
+/* one line, with the copy button living inside the field */
+.share-field { position: relative; display: flex; align-items: center; }
+.share-field input {
+  width: 100%; min-height: 50px;
   font-family: 'Berkeley Mono', 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 13px; line-height: 1.6; letter-spacing: -0.013em;
+  font-size: 14px; letter-spacing: -0.013em;
+  color: var(--mist); background: var(--carbon);
+  border: 1px solid var(--smoke); border-radius: var(--r-input);
+  padding: 13px 100px 13px 14px;
 }
-.share textarea:focus { outline: none; border-color: var(--fog); background: var(--void); }
-.share-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 12px; }
-.copied { color: #6d7409; font-size: 13px; font-weight: 510; }
+.share-field input:focus { outline: none; border-color: var(--fog); background: var(--void); }
+.share-copy {
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  font: inherit; font-size: 12px; font-weight: 510; cursor: pointer;
+  color: var(--paper); background: var(--obsidian);
+  border: 1px solid var(--smoke); border-radius: 4px;
+  padding: 7px 12px; min-height: 36px;
+}
+.share-copy:hover { border-color: var(--fog); }
+.share-copy.done { color: #6d7409; border-color: var(--lime-deep); background: var(--lime-wash); }
+.share-note { margin: 10px 0 0; font-size: 13px; color: var(--fog); line-height: 1.5; }
 
 /* ---------------- board ---------------- */
 .board {
@@ -334,8 +344,8 @@ h3 { font-size: 20px; line-height: 1.2; letter-spacing: -0.012em; }
   .score-grid > div { padding: 14px 8px; }
   .acc-row { grid-template-columns: 108px 1fr 44px; gap: 8px; }
   .hm-cell { width: 11px; height: 11px; }
-  .share textarea { min-height: 200px; font-size: 12px; padding: 14px; }
-  .share-actions .btn { flex: 1 1 46%; justify-content: center; }
+  .share-field input { font-size: 16px; padding: 13px 96px 13px 12px; }
+  .share-copy { padding: 7px 10px; }
   .session-foot { font-size: 11px; }
   .foot { margin-top: 28px; gap: 10px; }
 }

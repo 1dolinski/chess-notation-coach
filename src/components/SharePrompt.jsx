@@ -12,29 +12,27 @@ export default function SharePrompt() {
   const [text, setText] = useState(() => {
     try { return localStorage.getItem(KEY) || DEFAULT_PROMPT } catch (e) { return DEFAULT_PROMPT }
   })
-  const [msg, setMsg] = useState('')
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     try { localStorage.setItem(KEY, text) } catch (e) { /* private mode */ }
   }, [text])
 
   useEffect(() => {
-    if (!msg) return
-    const t = setTimeout(() => setMsg(''), 2600)
+    if (!copied) return
+    const t = setTimeout(() => setCopied(false), 2000)
     return () => clearTimeout(t)
-  }, [msg])
+  }, [copied])
 
-  async function copy(value, label) {
+  async function copy() {
     try {
-      await navigator.clipboard.writeText(value)
-      setMsg(label)
+      await navigator.clipboard.writeText(text)
+      setCopied(true)
     } catch (e) {
-      const ta = document.createElement('textarea')
-      ta.value = value
-      document.body.appendChild(ta)
-      ta.select()
-      try { document.execCommand('copy'); setMsg(label) } catch (e2) { setMsg('Copy failed — select the text and copy manually.') }
-      document.body.removeChild(ta)
+      // clipboard is denied in some embedded browsers — select the line so a manual copy is one tap
+      const el = document.getElementById('share-prompt')
+      if (el) { el.focus(); el.select() }
+      try { document.execCommand('copy'); setCopied(true) } catch (e2) { setCopied(false) }
     }
   }
 
@@ -42,26 +40,27 @@ export default function SharePrompt() {
     <section className="panel share" id="share">
       <div className="share-head">
         <h3>Give this to your AI</h3>
-        <span className="small">paste it into Muse, Grok, ChatGPT or Claude — the file holds the instructions</span>
+        <span className="small">paste it into Muse, Grok, ChatGPT or Claude</span>
       </div>
-      <textarea
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        onClick={(e) => e.target.select()}
-        spellCheck="false"
-        aria-label="Reminder prompt to give your AI"
-      />
-      <div className="share-actions">
-        <button className="btn primary big" onClick={() => copy(text, 'Copied — paste it into your AI.')}>Copy this prompt</button>
-        <button className="btn" onClick={() => copy(SKILL, 'skill.txt link copied.')}>Copy skill.txt link</button>
-        <button className="btn ghost" onClick={() => copy(`${SITE}/#/today`, 'Practice link copied.')}>Copy practice link</button>
-        <button className="btn ghost" onClick={() => setText(DEFAULT_PROMPT)}>Reset</button>
-        {msg && <span className="copied">{msg}</span>}
+
+      <div className="share-field">
+        <input
+          id="share-prompt"
+          type="text"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onClick={(e) => e.target.select()}
+          spellCheck="false"
+          aria-label="Reminder prompt to give your AI"
+        />
+        <button className={`share-copy ${copied ? 'done' : ''}`} onClick={copy} title="Copy the prompt">
+          {copied ? 'copied ✓' : 'copy'}
+        </button>
       </div>
-      <p className="small">
-        One line is all your assistant needs: it fetches <a href="./skill.txt" target="_blank" rel="noreferrer">skill.txt</a>,
-        which carries the daily reminder task, the streak rules, how to read your export code and the JSON format for
-        overriding a day’s set. Editable — change the wording (or the time) and it is saved in this browser.
+
+      <p className="share-note">
+        <a href="./skill.txt" target="_blank" rel="noreferrer">Open the instructions →</a>
+        <span> skill.txt holds the daily reminder task, the streak rules and how to read your export code.</span>
       </p>
     </section>
   )
