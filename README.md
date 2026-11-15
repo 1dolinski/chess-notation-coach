@@ -1,35 +1,55 @@
-# Notation Trainer
-[![made-with-react](https://img.shields.io/badge/Made%20with-React-blue)](https://reactjs.org/)
-[![npm-version](https://img.shields.io/badge/npm-v6.14.5-orange)](https://img.shields.io/badge/npm-v6.14.5-blue)
-[![license-mit](https://img.shields.io/badge/License-MIT-blue)](https://github.com/mattjliu/Notation-Trainer/blob/master/LICENSE)
+# Notation Coach
 
-This is a [ReactJS](https://reactjs.org/) app I created to help chess players learn and practice [algebraic chess notation](https://en.wikipedia.org/wiki/Algebraic_notation_(chess)). The app is built using [chessboardjsx](https://chessboardjsx.com/) and [chess.js](https://github.com/jhlywa/chess.js). 
+Daily chess-notation practice with AI-assigned sets and a streak counter.
+Forked from [mattjliu/Notation-Trainer](https://github.com/mattjliu/Notation-Trainer) (MIT) — positions still come
+from 944 world championship games (1886–2018); everything around them is new.
 
-## How it works
+Live: https://chess-notation-coach.vercel.app/
 
-### Using the app
+## What it does
 
-The app will render a position on the board and prompt you with a chess move written in algebraic notation. Make the correct move and a new position is generated. Your goal is to make as many moves as possible in 60 seconds. You can toggle the side to white, black or random (this also changes the orientation of board). 
+- **One set per day.** Seven-day rotation of themes (grid, capture, knight, check, castle, full notation, speed),
+  seeded by the date so the same link is always the same practice.
+- **Adaptive coaching.** The weakest drill type (lifetime accuracy under 75%) gets extra reps appended, and the
+  coach card explains why. Optional `src/data/coach-feed.json` lets an LLM/bot pin a day's headline and theme.
+- **Four drill kinds:** grid recall (click the named square; light or dark), knight fans (click every destination),
+  SAN reading in both directions, and real board moves you execute by clicking.
+- **Streak tracking:** a day banks once you answer 10 reps (configurable). Wrong answers still count and are
+  repeated at the end of the set. 16-week heatmap, per-drill accuracy, base64 export code for moving progress
+  between browsers or letting a bot verify it.
+- **`/llms.txt`** — a complete reminder contract: drop it into Muse, Grok or any assistant with a scheduler and it
+  sends the daily nudge with the right deep link, and reads a real streak from your export code.
 
-Here is a gif of the app in action:
+## Run it
 
-<p align="center">
- <img src="/demo.gif" width="450"/>
-</p>
-
-### How are the positions generated?
-
-Positions and moves are taken from previous world championship games. The PGN files for those events were downloaded [here](https://www.pgnmentor.com/files.html#world).
-
-## Install
 ```
 npm install
+npm run dev      # http://localhost:5173
+npm run build    # regenerates drills, syncs builder-log.txt, builds to dist/
+npm run preview
 ```
 
-## Usage
+## Structure
+
 ```
-npm start
+scripts/build-drills.mjs   PGN corpus -> src/data/drills.json (position pools per move type + SAN reading items)
+scripts/sync-log.mjs       builder-log.md -> public/builder-log.txt
+src/lib/daily.js           coach: theme rotation, adaptive extras, set builder
+src/lib/store.js           localStorage day log, streak math, goal, export/import
+src/components/Session.jsx drill runner (grid / knight / read / play)
+src/components/Today.jsx   coach card, streak strip, start set
+src/components/StreakPanel.jsx  heatmap, accuracy, goal, export code
+src/data/coach-feed.json   optional per-date overrides for a reminder bot
+public/llms.txt            bot instructions (reminders, streak decoding, overrides)
 ```
 
-## Try it out here
-https://mattjliu.github.io/Notation-Trainer/
+## Deep links
+
+```
+/#/today                     today's set
+/#/day/2026-11-16            the set for a date (deterministic)
+/#/day/2026-11-16?theme=check  force a theme for one session
+/#/streak                    history and export code
+```
+
+Notation conventions, drill data and streak math are documented in `public/llms.txt`.

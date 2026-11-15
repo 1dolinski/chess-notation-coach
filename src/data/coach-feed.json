@@ -1,0 +1,9 @@
+{
+  "_readme": "Optional daily overrides for the practice coach. Any LLM/bot can add an entry keyed by YYYY-MM-DD with {headline, why, theme, targetReps, blurb, tip}. The app shows it as the coach card for that date and builds the set from `theme`. Valid themes: grid | capture | knight | check | castle | full | speed. See /llms.txt.",
+  "2026-11-15": {
+    "headline": "Day 1: grid + knight jumps",
+    "why": "First session: anchors (a1/h1/a8/h8, d4-e5) plus knight geometry. Nothing else until squares stop feeling like coordinates.",
+    "theme": "grid",
+    "targetReps": 18
+  }
+}

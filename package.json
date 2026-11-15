@@ -1,46 +1,23 @@
 {
-  "name": "notation-trainer",
-  "version": "0.1.0",
+  "name": "chess-notation-coach",
   "private": true,
-  "homepage": "https://mattjliu.github.io/Notation-Trainer/",
-  "dependencies": {
-    "@fortawesome/fontawesome-svg-core": "^1.2.30",
-    "@fortawesome/free-regular-svg-icons": "^5.14.0",
-    "@fortawesome/free-solid-svg-icons": "^5.14.0",
-    "@fortawesome/react-fontawesome": "^0.1.11",
-    "@testing-library/jest-dom": "^4.2.4",
-    "@testing-library/react": "^9.5.0",
-    "@testing-library/user-event": "^7.2.1",
-    "chess.js": "^0.11.0",
-    "chessboardjsx": "^2.4.2",
-    "gh-pages": "^3.1.0",
-    "react": "^16.13.1",
-    "react-dom": "^16.13.1",
-    "react-github-corner": "^2.3.0",
-    "react-router-dom": "^5.2.0",
-    "react-scripts": "3.4.1"
-  },
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Daily practice sets + streak tracking for chess notation, built on mattjliu/Notation-Trainer",
   "scripts": {
-    "predeploy": "npm run build",
-    "deploy": "gh-pages -d build",
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "drills": "node scripts/build-drills.mjs",
+    "log": "node scripts/sync-log.mjs",
+    "dev": "npm run log && vite",
+    "build": "node scripts/build-drills.mjs && node scripts/sync-log.mjs && vite build",
+    "preview": "vite preview --port 4173"
   },
-  "eslintConfig": {
-    "extends": "react-app"
+  "dependencies": {
+    "chess.js": "^0.11.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^5.4.11"
   }
 }
