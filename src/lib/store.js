@@ -39,14 +39,14 @@ export function emptyDay() {
 export function loadState() {
   try {
     const raw = localStorage.getItem(KEY)
-    if (!raw) return { version: 1, days: {}, best: 0, goal: DEFAULT_GOAL, name: '', settings: normaliseSettings() }
+    if (!raw) return { version: 1, days: {}, best: 0, goal: DEFAULT_GOAL, name: '', settings: normaliseSettings(), seen: {} }
     const s = JSON.parse(raw)
     return {
       version: 1, days: s.days || {}, best: s.best || 0, goal: s.goal || DEFAULT_GOAL,
-      name: s.name || '', settings: normaliseSettings(s.settings)
+      name: s.name || '', settings: normaliseSettings(s.settings), seen: s.seen || {}
     }
   } catch (e) {
-    return { version: 1, days: {}, best: 0, goal: DEFAULT_GOAL, name: '', settings: normaliseSettings() }
+    return { version: 1, days: {}, best: 0, goal: DEFAULT_GOAL, name: '', settings: normaliseSettings(), seen: {} }
   }
 }
 
@@ -108,6 +108,28 @@ export function recordAnswer(type, correct, ms, extra = {}) {
   return state
 }
 
+/* ---- anti-repetition ---- */
+// Keys of reps already served, with the date they were served on. Selection avoids anything from a
+// previous day, so the same position does not come back tomorrow; today's own keys are ignored while
+// planning so a reload mid-session rebuilds exactly the same set.
+const SEEN_CAP = 600
+
+export function noteSeen(keys, dateKey = todayKey()) {
+  const s = loadState()
+  const seen = s.seen || {}
+  keys.filter(Boolean).forEach((k) => { seen[k] = dateKey })
+  const entries = Object.entries(seen).sort((a, b) => (a[1] < b[1] ? 1 : a[1] > b[1] ? -1 : 0))
+  s.seen = Object.fromEntries(entries.slice(0, SEEN_CAP))
+  saveState(s) // deliberately silent: no coach:progress event, so the running set is not re-planned
+  return s
+}
+
+export function seenBefore(state, dateKey = todayKey()) {
+  const out = new Set()
+  Object.entries((state && state.seen) || {}).forEach(([k, d]) => { if (d !== dateKey) out.add(k) })
+  return out
+}
+
 export function setSetting(key, value) {
   const s = loadState()
   s.settings = normaliseSettings({ ...s.settings, [key]: value })
@@ -142,6 +164,7 @@ export function lastPracticed(state, type) {
 }
 
 export function exportCode(state = loadState()) {
+  // seen is device state, not progress: keeping it out keeps the export code short
   return btoa(unescape(encodeURIComponent(JSON.stringify({ v: 1, days: state.days, goal: state.goal, settings: state.settings }))))
 }
 

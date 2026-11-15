@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Board from './Board'
-import { recordAnswer, streakInfo, loadState } from '../lib/store'
+import { recordAnswer, streakInfo, loadState, noteSeen } from '../lib/store'
+import { seenKey } from '../lib/daily'
 
 const PIECE = { p: 'Pawn', n: 'Knight', b: 'Bishop', r: 'Rook', q: 'Queen', k: 'King' }
 
@@ -15,7 +16,10 @@ function clocks(sec) {
   return `${m}:${String(s).padStart(2, '0')}`
 }
 
-const KIND_TAG = { read: 'reading', play: 'board', square: 'grid', knight: 'knight', mental: 'mental' }
+const KIND_TAG = {
+  read: 'reading', play: 'board', square: 'grid', knight: 'knight', mental: 'mental',
+  san: 'notation', dest: 'read & click'
+}
 
 // Board orientation: settings win, otherwise follow the side to move on real positions.
 export function resolveOrientation(settings, item) {
@@ -30,6 +34,8 @@ export function resolveOrientation(settings, item) {
 function revealMarks(item) {
   const m = {}
   if (item.kind === 'square') m[item.square] = 'hit'
+  if (item.kind === 'san') { m[item.task.from] = 'target'; m[item.task.to] = 'hit' }
+  if (item.kind === 'dest') { m[item.from] = 'target'; m[item.answer] = 'hit' }
   if (item.kind === 'knight') {
     m[item.from] = 'target'
     item.targets.forEach((t) => { m[t] = 'hit' })
@@ -46,6 +52,8 @@ function revealMarks(item) {
 function plainAnswer(item) {
   if (item.kind === 'read') return item.answer
   if (item.kind === 'mental') return item.answer
+  if (item.kind === 'san') return `${item.answer} (${item.task.from} → ${item.task.to})`
+  if (item.kind === 'dest') return `${item.answer} — ${item.task.san}`
   if (item.kind === 'square') return item.mode === 'color' ? item.color : item.square
   if (item.kind === 'knight') return item.targets.join(' ')
   if (item.kind === 'play') return `${item.task.san} — ${item.task.from} → ${item.task.to}`
@@ -53,7 +61,12 @@ function plainAnswer(item) {
 }
 
 function questionText(item) {
-  if (item.kind === 'square') return item.mode === 'color' ? `Is ${item.square} light or dark?` : `Click ${item.square}`
+  if (item.kind === 'square') {
+    if (item.notation) return `${item.notation} — is ${item.square} light or dark?`
+    return item.mode === 'color' ? `Is ${item.square} light or dark?` : `Click ${item.square}`
+  }
+  if (item.kind === 'san') return 'Which notation matches the highlighted move?'
+  if (item.kind === 'dest') return `${item.task.san} — click the square it lands on`
   if (item.kind === 'knight') return `N from ${item.from} — click every square it can reach`
   if (item.kind === 'mental') return item.q
   if (item.kind === 'play') return `${item.task.san} (${item.task.color === 'w' ? 'White' : 'Black'} to move)`
@@ -81,6 +94,17 @@ function DrillBoard({ item, marked, onSquare, interactive = true, coords = false
       <Board
         marked={marked} coords={true} selectable={false} size={size}
         pieces={{ [item.from]: { type: 'n', color: 'w' } }} orientation={side}
+      />
+    )
+  }
+  if (item.kind === 'san') {
+    return <Board fen={item.task.fen} marked={marked} coords={coords} orientation={side} selectable={false} />
+  }
+  if (item.kind === 'dest') {
+    return (
+      <Board
+        fen={item.fen} marked={marked} coords={coords} orientation={side}
+        onSquare={interactive ? onSquare : null} selectable={interactive}
       />
     )
   }
@@ -122,6 +146,8 @@ export default function Session({ items, title = 'Practice', onExit, onFinish, s
     setPick(null)
     setNudge('')
     itemStart.current = Date.now()
+    // remember what was served so tomorrow's set avoids it; silent, so the running set is not re-planned
+    if (item) noteSeen([seenKey(item)])
     if (import.meta.env.DEV) window.__coachItem = item
   }, [pos, queue])
 
@@ -198,6 +224,10 @@ export default function Session({ items, title = 'Practice', onExit, onFinish, s
   function answerRead(opt) {
     if (phase !== 'ask') return
     const right = opt === item.answer
+    if (item.kind === 'san') {
+      commit(right, right ? `✓ ${item.task.san}` : `✗ the move is ${item.task.san} (${item.task.from} → ${item.task.to})`, opt)
+      return
+    }
     if (item.kind === 'mental') {
       commit(right, right ? `✓ ${item.answer}` : `✗ answer: ${item.answer} (knight on ${item.from} reaches ${item.moves.map((m) => m.to).join(' ')})`, opt)
       return
@@ -226,6 +256,11 @@ export default function Session({ items, title = 'Practice', onExit, onFinish, s
         foundRef.current = item.targets
         setFound(item.targets)
       }
+      return
+    }
+    if (item.kind === 'dest') {
+      const t = item.task
+      commit(square === t.to, square === t.to ? `✓ ${t.san} lands on ${t.to}` : `✗ ${t.san} lands on ${t.to}, not ${square}`, square)
       return
     }
     if (item.kind === 'play') {
@@ -276,7 +311,7 @@ export default function Session({ items, title = 'Practice', onExit, onFinish, s
 
         <DrillBoard item={r} marked={marks} interactive={false} coords={prefs.coords} side={side} size={360} />
 
-        {(r.kind === 'read' || r.kind === 'mental') && (
+        {(r.kind === 'read' || r.kind === 'mental' || r.kind === 'san') && (
           <div className="options">
             {r.options.map((opt) => (
               <button
@@ -320,6 +355,10 @@ export default function Session({ items, title = 'Practice', onExit, onFinish, s
     marked[item.from] = 'target'
     item.moves.forEach((m) => { marked[m.to] = 'hit' })
   }
+  if (item.kind === 'dest') {
+    if (phase === 'wrong') { marked[item.from] = 'target'; marked[item.answer] = 'hit' }
+    if (phase === 'right') { marked[item.from] = 'hit'; marked[item.answer] = 'hit' }
+  }
   if (item.kind === 'play') {
     if (pick) marked[pick] = 'target'
     if (phase === 'wrong') { marked[item.task.from] = 'target'; marked[item.task.to] = 'hit' }
@@ -329,8 +368,19 @@ export default function Session({ items, title = 'Practice', onExit, onFinish, s
   let prompt = ''
   let sub = ''
   if (item.kind === 'square') {
-    prompt = item.mode === 'color' ? `Is ${item.square} light or dark?` : `Click ${item.square}`
-    sub = item.mode === 'color' ? 'Colour is decided by file+rank parity.' : 'No coordinates shown. Use the anchors.'
+    if (item.notation) {
+      prompt = `${item.notation} — is ${item.square} light or dark?`
+      sub = 'Read the destination square out of the move, then the colour.'
+    } else {
+      prompt = item.mode === 'color' ? `Is ${item.square} light or dark?` : `Click ${item.square}`
+      sub = item.mode === 'color' ? 'Colour is decided by file+rank parity.' : 'No coordinates shown. Use the anchors.'
+    }
+  } else if (item.kind === 'san') {
+    prompt = 'Which notation matches the highlighted move?'
+    sub = `${item.task.color === 'w' ? 'White' : 'Black'} to move · the move is marked on the board.`
+  } else if (item.kind === 'dest') {
+    prompt = item.task.san
+    sub = `Click the square it lands on · ${item.task.color === 'w' ? 'White' : 'Black'} to move`
   } else if (item.kind === 'knight') {
     prompt = `N from ${item.from} — click every square it can reach`
     sub = blindKnight
@@ -347,7 +397,8 @@ export default function Session({ items, title = 'Practice', onExit, onFinish, s
     sub = item.kind === 'read' ? 'What does this move say?' : ''
   }
 
-  const showBoard = item.kind === 'play' || (item.kind === 'square' && item.mode === 'click') ||
+  const showBoard = item.kind === 'play' || item.kind === 'san' || item.kind === 'dest' ||
+    (item.kind === 'square' && item.mode === 'click') ||
     item.kind === 'knight' || (item.kind === 'mental' && phase !== 'ask')
 
   return (
@@ -378,7 +429,7 @@ export default function Session({ items, title = 'Practice', onExit, onFinish, s
         </div>
       )}
 
-      {(item.kind === 'read' || item.kind === 'mental') && (
+      {(item.kind === 'read' || item.kind === 'mental' || item.kind === 'san') && (
         <div className="options">
           {item.options.map((opt) => (
             <button

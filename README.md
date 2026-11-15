@@ -12,9 +12,15 @@ Live: https://chess-notation-coach.vercel.app/
   seeded by the date so the same link is always the same practice.
 - **Adaptive coaching.** The weakest drill type (lifetime accuracy under 75%) gets extra reps appended, and the
   coach card explains why. Optional `src/data/coach-feed.json` lets an LLM/bot pin a day's headline and theme.
-- **Five drill kinds:** grid recall (click the named square; light or dark), knight fans (click every destination,
-  every second rep blind), SAN reading in both directions, real board moves you execute by clicking, and mental geometry
-  questions answered with no board at all ("knight on b5 — how many of its moves land to the left?").
+- **Seven drill kinds:** grid recall (click the named square; light or dark; or read the square out of real notation),
+  knight fans (click every destination, every second rep blind), SAN reading in both directions, real board moves you
+  execute by clicking, choose-the-notation (the move is highlighted, you pick the SAN), read-and-click (the notation is
+  given, you click the destination), and mental geometry answered with no board at all — knight-move counts, which /
+  NOT-which knight moves, total moves from a square, 2+1 vs 1+2 directions, rank/file distance, and
+  "which square is 2 files right and 1 rank up?".
+- **No repeats:** ~5,800 bundled positions and moves from 944 world championship games, grouped by kind so a theme day
+  shows that kind of move, and the daily draw skips anything served on an earlier day (600-entry seen map). Measured
+  over 60 simulated days: 5.4% of reps repeat, none in the first four.
 - **Board side is randomised:** every rep deterministically picks White or Black, and on Black the whole board turns
   around while the prompt stays in algebraic notation, so notation is read from both sides. Every second knight rep
   is blind — the square is named but not marked, so it has to be pictured. (No settings panel; the defaults live in
@@ -60,7 +66,7 @@ scripts/build-drills.mjs   PGN corpus -> src/data/drills.json (position pools pe
 scripts/sync-log.mjs       builder-log.md -> public/builder-log.txt
 src/lib/daily.js           coach: theme rotation, adaptive extras, set builder
 src/lib/store.js           localStorage day log, streak math, goal, export/import
-src/components/Session.jsx drill runner (grid / knight / read / play)
+src/components/Session.jsx drill runner (all seven kinds + in-session review)
 src/components/Today.jsx   coach card, streak strip, start set
 src/components/StreakPanel.jsx  heatmap, accuracy, goal, export code
 src/data/coach-feed.json   optional per-date overrides for a reminder bot

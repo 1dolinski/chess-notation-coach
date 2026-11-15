@@ -44,16 +44,24 @@ Do what it says — set up the daily reminder, then send it once a day.
 ## What the user is doing
 
 An adult improver who can read algebraic notation but slowly — they still translate square by square.
-The app drills five things:
+The app drills seven kinds of question:
 
-1. `grid` — click a named square on an empty board (corners and centre first), or say light/dark.
+1. `grid` — click a named square on an empty board (anchors first), say light/dark, or read the
+   destination square out of a real move ("Rxd8 — is d8 light or dark?").
 2. `knight` — click every square a knight can reach from the marked square. Every second knight rep is
    blind: the square is named in the prompt but not marked on the board, so it has to be pictured.
-3. `read` — SAN to plain English ("Nxe5+" = "Knight takes e5, check"), and the reverse.
+3. `read` — SAN to plain English ("Nxe5+" = "Knight takes e5, check"), and the reverse (English → SAN).
 4. `play` — a real position from a world championship game: read the move, then make it on the board.
-5. `mental` — geometry questions answered with no board at all: "knight on b5 — how many of its moves
-   land to the left?", "which of these is NOT a knight move from f3?", "a knight jumps g1 → e2: left
-   and up, or right and down?". The board is revealed after the answer.
+5. `san` — the move is highlighted on the board and you pick its notation. Reverse reading with a board.
+6. `dest` — the notation is given and you click the square it lands on. SAN → coordinate, on the board.
+7. `mental` — geometry answered with no board: knight-move counts ("how many of its moves land to the
+   left?"), which/NOT-which knight moves, total moves from a square, 2+1 vs 1+2 direction questions,
+   rank/file distance between two squares, and "which square is 2 files right and 1 rank up?". The
+   board is revealed after the answer.
+
+Variety: ~5,800 positions and moves are bundled from 944 world championship games, grouped by kind
+(capture / check / castle / promo / knight / disambiguation / quiet), and the daily draw skips anything
+already served on an earlier day, so consecutive sets do not repeat.
 
 In-session review: the ◀ review button (or the ← key) steps back through the reps already answered, showing
 the question, the correct answer, what the user picked, and the position with the move highlighted. Browsing

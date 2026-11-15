@@ -10,7 +10,9 @@ const KIND_LABEL = {
   knight: 'knight jumps',
   read: 'read the move',
   play: 'make the move',
-  mental: 'mental tricks'
+  mental: 'mental tricks',
+  san: 'write the notation',
+  dest: 'read & click'
 }
 
 export default function Today({ dateKey = todayKey(), themeOverride = null, onNavigate }) {
@@ -30,7 +32,10 @@ export default function Today({ dateKey = todayKey(), themeOverride = null, onNa
   const diag = useMemo(() => diagnosis(state), [state])
   const day = dayOf(state, todayKey())
 
-  const items = session === 'set' ? plan.items : session === 'extra' ? extraSet() : session === 'mental' ? mentalSet(10) : []
+  // extra/mental sets are seeded by the clock and skip anything already served (state.seen)
+  const items = session === 'set' ? plan.items
+    : session === 'extra' ? extraSet(Date.now(), state)
+      : session === 'mental' ? mentalSet(10, Date.now(), state) : []
 
   if (session) {
     return (
@@ -102,7 +107,7 @@ export default function Today({ dateKey = todayKey(), themeOverride = null, onNa
       </div>
 
       <p className="footer-note">
-        Positions from {meta.games} world championship games (1886–2018) · drill build {meta.generated} ·{' '}
+        {meta.total} positions and moves from {meta.games} world championship games (1886–2018) · drill build {meta.generated} ·{' '}
         <a href="./skill.txt" target="_blank" rel="noreferrer">skill.txt</a> for your reminder bot
       </p>
     </div>
